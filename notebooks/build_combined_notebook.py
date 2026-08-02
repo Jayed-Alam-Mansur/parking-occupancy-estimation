@@ -82,19 +82,19 @@ interesting thing in this project.
 
 ---
 
-## The route
+## The route — click any act to jump straight to it
 
 | Act | Question it answers |
 |---|---|
-| **1** | What does the data actually look like? |
-| **2** | How do I undo the camera's perspective distortion? |
-| **3** | How do I cut the lot into 100 independent bays? |
-| **4** | How do I make bays photographed hours apart comparable? |
-| **5** | How do I turn grey pixels into a clean black-and-white decision? |
-| **6** | What eight numbers describe "is there a car here?" |
-| **7** | Where exactly do I draw the yes/no line? |
-| **8** | Does it work on 11,599 samples — and what went wrong? |
-| **9** | What it means, and what I would do next |
+| [**1 · Know Your Data**](#act1) | What does the data actually look like? |
+| [**2 · The Camera Is Lying**](#act2) | How do I undo the camera's perspective distortion? |
+| [**3 · Carving 100 Bays**](#act3) | How do I cut the lot into 100 independent bays? |
+| [**4 · Noon vs Dusk**](#act4) | How do I make bays photographed hours apart comparable? |
+| [**5 · Grey to Black-and-White**](#act5) | How do I turn grey pixels into a clean binary decision? |
+| [**6 · Eight Numbers**](#act6) | What eight numbers describe "is there a car here?" |
+| [**7 · Drawing the Line**](#act7) | Where exactly do I draw the yes/no line? |
+| [**8 · The Verdict & the Twist**](#act8) | Does it work on 11,599 samples — and what went wrong? |
+| [**9 · What It Means**](#act9) | What it means, and what I would do next |
 
 ---
 
@@ -538,7 +538,8 @@ cells[-1].execution_count = None
 dropped = 0
 for fname, act, opener in ACTS:
     nb = nbformat.read(f"{SRC}/{fname}", as_version=4)
-    cells.append(new_markdown_cell(opener))
+    # explicit anchor so the prologue's route table can jump here
+    cells.append(new_markdown_cell(f'<a id="act{act}"></a>\n\n' + opener))
     kept = 0
     counter = [0]
     for idx, c in enumerate(nb.cells):
@@ -575,6 +576,11 @@ for c in cells:
         for o in c.get("outputs", []):
             if o.get("output_type") == "execute_result":
                 o["execution_count"] = n
+
+# Never let Jupyter bury a tall output inside a small scroll box mid-talk
+for c in cells:
+    if c.cell_type == "code":
+        c.metadata.setdefault("jupyter", {})["outputs_scrolled"] = False
 
 out.cells = cells
 nbformat.validate(out)
