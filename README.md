@@ -208,8 +208,38 @@ All images below are **real generated outputs** committed in `outputs/`. Nothing
 
 ---
 
+## 🚀 Start Here — Three Ways to Read This Project
+
+Development happened across nine sequential notebooks. For reading, presenting or grading, **use the combined build instead** — the same work assembled into one continuous narrative with every executed output preserved.
+
+| I want to… | Open this | Notes |
+|---|---|---|
+| **Read the whole project as one story** | [`notebooks/00_COMPLETE_PROJECT.ipynb`](notebooks/00_COMPLETE_PROJECT.ipynb) | 160 cells · 9 acts · all 120 outputs and 33 figures intact. Clickable act navigation in the prologue. |
+| **Present it live** | [`docs/presentation/parking-occupancy-presentation.html`](docs/presentation/parking-occupancy-presentation.html) | Standalone, self-contained. No Jupyter, no kernel, no way to wipe an output mid-talk. Download and double-click. |
+| **Follow the talk track** | [`docs/presentation/PRESENTATION_SCRIPT.md`](docs/presentation/PRESENTATION_SCRIPT.md) | Act-by-act speaker script, prepared Q&A, and a timing card with cut markers for a 7-minute version. |
+| **Audit the original work** | [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb) → [`09_final_report.ipynb`](notebooks/09_final_report.ipynb) | The nine development notebooks, untouched. These remain the source of truth. |
+
+### The nine acts
+
+| Act | Title | Answers |
+|---|---|---|
+| **1** | Know Your Data Before You Touch It | What does the data actually look like? |
+| **2** | The Camera Is Lying To You | How do I undo perspective distortion? |
+| **3** | Carving the Lot Into 100 Bays | How do I get 100 independent measurements? |
+| **4** | Making Noon and Dusk Comparable | How do I normalise across lighting? |
+| **5** | From Grey to Black-and-White | How do I get a clean binary mask? |
+| **6** | Eight Numbers That Describe a Parking Bay | What features actually separate the classes? |
+| **7** | Where Exactly Do We Draw the Line? | How is the decision made without ML? |
+| **8** | **The Verdict, and the Twist** | Does it work on 11,599 samples — and what went wrong? |
+| **9** | What It Means, and What I'd Do Next | Honest limitations and next steps |
+
+> 🔬 **How the combined notebook was built.** [`notebooks/build_combined_notebook.py`](notebooks/build_combined_notebook.py) merges the nine sources: it collapses nine duplicated import blocks into one setup cell, renumbers sections into a single arc, strips the `Next: Notebook NN` forward-pointers, re-attaches Act 4's four figures (which the `Agg` backend had written to disk instead of displaying inline), and recompresses photographic PNG outputs to JPEG — **27.15 MB → 6.04 MB**. The only outputs lost were docstring echoes and `Configuration loaded successfully!` chatter. Re-run it any time to regenerate.
+
+---
+
 ## 📑 Table of Contents
 
+- [🚀 Start Here — Three Ways to Read This Project](#-start-here--three-ways-to-read-this-project)
 - [🖼️ The System at a Glance](#️-the-system-at-a-glance)
 - [📖 Project Description](#-project-description)
 - [✨ Features](#-features)
@@ -246,6 +276,7 @@ The project is built in **three layers**, deliberately separated:
 |-------|----------|----------------|
 | **Library** | `src/` (14 modules, ~4,100 lines) | Pure, testable functions. One module per pipeline stage. No notebook code. |
 | **Experiments** | `notebooks/` (9 notebooks, ~3,350 lines) | Narrative, visualisation, tuning, evaluation. Imports from `src/`, never redefines logic. |
+| **Presentation** | `notebooks/00_COMPLETE_PROJECT.ipynb` + `docs/presentation/` | All nine notebooks merged into one nine-act story with outputs preserved, plus a standalone HTML build and speaker script. Generated, never hand-edited. |
 | **Artifacts** | `config/` | Everything learned during calibration: `H`, slot layout, tuned thresholds and weights. |
 
 This means the calibration pipeline (Notebooks 01→07) runs **once**, produces three small config files, and inference thereafter needs only those files plus the source modules — not the 3.9 GB dataset.
@@ -444,6 +475,9 @@ parking-occupancy-estimation/
 │   └── processed/                     # ⚠️ EMPTY (declared in config.yaml, never written to)
 │
 ├── notebooks/                         # 📓 9 notebooks, each paired .ipynb + .py (jupytext)
+│   ├── 00_COMPLETE_PROJECT.ipynb      # ⭐ ALL 9 MERGED — 9 acts, all outputs. Read/present this
+│   ├── build_combined_notebook.py     # Reproducible merge script that generates 00_
+│   │
 │   ├── 01_explore.ipynb / .py         # Dataset exploration & EDA
 │   ├── 02_geometry.ipynb / .py        # Camera geometry & homography
 │   ├── 03_roi.ipynb / .py             # ROI extraction & masking
@@ -486,7 +520,9 @@ parking-occupancy-estimation/
 │
 ├── docs/
 │   ├── diagrams/                      # ⚠️ EMPTY
-│   └── presentation/                  # ⚠️ EMPTY
+│   └── presentation/                  # 🎤 Presentation material
+│       ├── parking-occupancy-presentation.html   # Standalone build of 00_ (7.6 MB, no Jupyter needed)
+│       └── PRESENTATION_SCRIPT.md                # Act-by-act speaker script + Q&A + timing card
 │
 └── venv/                              # Python 3.12.3 virtual environment (752 MB) — NOT in git
 ```
@@ -501,12 +537,13 @@ parking-occupancy-estimation/
 | `data/ground_truth/` | Two CSVs: parsed XML labels, and the extracted feature matrix used for threshold tuning. | ✅ Populated |
 | `data/annotations/` | Declared in `config.yaml` as `paths.annotations`. No code writes here. | ⚠️ Empty |
 | `data/processed/` | Declared in `config.yaml` as `paths.data_processed`. No code writes here. | ⚠️ Empty |
-| `notebooks/` | The narrative: 9 sequential notebooks that build, calibrate and evaluate the system. Symlinks let them run from either the project root or the notebooks directory. | ✅ Populated |
+| `notebooks/` | The narrative: 9 sequential notebooks that build, calibrate and evaluate the system, plus `00_COMPLETE_PROJECT.ipynb` merging all nine into one story. Symlinks let them run from either the project root or the notebooks directory. | ✅ Populated |
 | `src/` | The reusable library. Every notebook imports from here; no algorithm is defined inside a notebook. | ✅ Populated |
 | `outputs/screenshots/` | Every figure produced by the notebooks, auto-saved by `visualize.show_and_save_fig()`. | ✅ 29 files |
 | `outputs/annotated/` | Final colour-coded results written by Notebook 08. | ✅ 3 files |
 | `outputs/pipeline`, `dashboard`, `figures`, `evaluation`, `reports` | Reserved output directories. `config.yaml` names four of them, but no executed code writes to any. | ⚠️ Empty |
-| `docs/` | Reserved for diagrams and presentation material. | ⚠️ Empty |
+| `docs/presentation/` | Standalone HTML build of the combined notebook, plus the speaker script. | ✅ 2 files |
+| `docs/diagrams/` | Reserved for architecture diagrams. The architecture is documented as ASCII in this README instead. | ⚠️ Empty |
 | `venv/` | Local virtual environment. Should be excluded from version control. | ✅ Present |
 
 ### Important files explained
