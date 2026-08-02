@@ -1,0 +1,14 @@
+thresholds:
+  edge_density_high: 0.2655568755568755
+  edge_density_low: 0.15126117622227564
+  score_threshold: 0.2921212121212121
+  confidence_low: 0.2
+weights:
+  edge_density: 0.06394634871445837
+  foreground_ratio: 0.11153494180643117
+  gradient_magnitude: 0.3034710363221578
+  local_variance: 0.19054292043999196
+  largest_component: 0.07858501744951239
+  intensity_std: 0.21661217567663768
+  otsu_separability: 0.030072897712578477
+  mean_saturation: 0.005234661878232194

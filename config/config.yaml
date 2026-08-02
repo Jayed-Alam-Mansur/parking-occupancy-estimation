@@ -1,0 +1,84 @@
+# =============================================================================
+# Automatic Parking Occupancy Estimation - Configuration
+# =============================================================================
+# All tunable parameters in one place.
+# Change values here instead of hardcoding in the notebook.
+# =============================================================================
+
+# --- Project Paths ---
+paths:
+  data_raw: "data/raw/"
+  data_processed: "data/processed/"
+  annotations: "data/annotations/"
+  output_annotated: "outputs/annotated/"
+  output_pipeline: "outputs/pipeline/"
+  output_dashboard: "outputs/dashboard/"
+  output_evaluation: "outputs/evaluation/"
+
+# --- Image Preprocessing ---
+preprocessing:
+  # CLAHE (Contrast Limited Adaptive Histogram Equalization)
+  clahe_clip_limit: 2.0
+  clahe_grid_size: [8, 8]
+  
+  # Gaussian Blur kernel size (must be odd)
+  gaussian_kernel: [5, 5]
+  
+  # Median Filter kernel size (must be odd)
+  median_kernel: 5
+
+# --- Segmentation ---
+segmentation:
+  # Global threshold value (0-255)
+  global_threshold: 127
+  
+  # Adaptive threshold parameters
+  adaptive_block_size: 11
+  adaptive_constant: 2
+  
+  # Otsu threshold is computed automatically (no parameter needed)
+
+# --- Morphological Operations ---
+morphology:
+  # Structuring element size
+  kernel_size: [3, 3]
+  
+  # Number of iterations for erosion/dilation
+  erosion_iterations: 1
+  dilation_iterations: 1
+
+# --- Feature Extraction ---
+features:
+  # Canny edge detection thresholds
+  canny_low: 50
+  canny_high: 150
+
+# --- Occupancy Decision ---
+decision:
+  # Thresholds for classifying a slot as OCCUPIED
+  # A slot is OCCUPIED if ANY of these conditions are met with sufficient strength
+  edge_density_threshold: 0.1        # Fraction of edge pixels (0.0 - 1.0)
+  foreground_ratio_threshold: 0.25   # Fraction of white pixels in binary mask
+  pixel_variance_threshold: 500      # Variance of intensity values
+  
+  # Minimum number of features that must exceed threshold
+  min_features_above_threshold: 2
+
+# --- Perspective Transform ---
+perspective:
+  # Output size for bird's-eye view [width, height]
+  output_size: [600, 800]
+
+# --- Visualization ---
+visualization:
+  # Colors in BGR format (OpenCV convention)
+  vacant_color: [0, 255, 0]       # Green
+  occupied_color: [0, 0, 255]     # Red
+  slot_border_color: [255, 255, 0] # Cyan
+  
+  # Overlay transparency (0.0 = fully transparent, 1.0 = fully opaque)
+  overlay_alpha: 0.35
+  
+  # Font settings
+  font_scale: 0.5
+  font_thickness: 1

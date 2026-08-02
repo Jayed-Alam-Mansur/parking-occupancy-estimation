@@ -1,0 +1,36 @@
+# =============================================================================
+# Automatic Parking Occupancy Estimation
+# Classical Image Processing Project
+# =============================================================================
+# Core Dependencies
+# =============================================================================
+
+# Image Processing
+opencv-python==4.10.0.84        # Core computer vision library
+numpy==1.26.4                    # Array operations and linear algebra
+scikit-image==0.24.0             # Supplementary image processing functions
+
+# Visualization
+matplotlib==3.9.2                # Plotting and visualization
+
+# Data Handling
+pandas==2.2.2                    # Data tables (minimal use)
+PyYAML==6.0.2                    # Configuration file parsing
+
+# Jupyter
+jupyter==1.1.1                   # Interactive notebook environment
+ipykernel==6.29.5                # Jupyter kernel
+
+# Utilities
+tqdm==4.66.5                     # Progress bars
+seaborn==0.13.2                  # Statistical visualization (for confusion matrix)
+
+# =============================================================================
+# WARNING: The following are STRICTLY PROHIBITED in this project
+# - tensorflow
+# - torch / pytorch
+# - keras
+# - ultralytics (YOLO)
+# - detectron2
+# - Any pretrained model package
+# =============================================================================

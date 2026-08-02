@@ -1,0 +1,39 @@
+# ---- Dataset (7.5 GB — download separately, see README "Dataset") ----
+data/raw/
+# Keep the empty scratch dirs in the tree, ignore whatever lands in them
+data/processed/*
+!data/processed/.gitkeep
+data/annotations/*
+!data/annotations/.gitkeep
+*.tar.gz
+
+# ---- Virtual environment ----
+venv/
+.venv/
+env/
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- Editors ----
+.vscode/
+.idea/
+*.swp
