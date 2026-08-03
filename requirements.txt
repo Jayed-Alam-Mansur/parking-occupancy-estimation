@@ -2,29 +2,31 @@
 # Automatic Parking Occupancy Estimation
 # Classical Image Processing Project
 # =============================================================================
-# Core Dependencies
+# Runtime dependencies — everything src/ and app.py need.
+#
+# This file is what Streamlit Community Cloud installs, so it is kept minimal
+# and headless. To also run the notebooks, install requirements-dev.txt.
 # =============================================================================
 
 # Image Processing
-opencv-python==4.10.0.84        # Core computer vision library
-numpy==1.26.4                    # Array operations and linear algebra
-scikit-image==0.24.0             # Supplementary image processing functions
+opencv-python-headless==4.10.0.84  # Core CV library. Headless build: identical
+                                   # API minus the GUI functions (imshow /
+                                   # namedWindow / waitKey), none of which this
+                                   # project uses. The regular opencv-python
+                                   # wheel needs libGL.so.1, which is absent
+                                   # from Streamlit Cloud containers and fails
+                                   # at import.
+numpy==1.26.4                      # Array operations and linear algebra
 
 # Visualization
-matplotlib==3.9.2                # Plotting and visualization
+matplotlib==3.9.2                  # Plotting; used by src/visualize.py
 
 # Data Handling
-pandas==2.2.2                    # Data tables (minimal use)
-PyYAML==6.0.2                    # Configuration file parsing
+pandas==2.2.2                      # Data tables
+PyYAML==6.0.2                      # Configuration file parsing
 
-# Jupyter
-jupyter==1.1.1                   # Interactive notebook environment
-ipykernel==6.29.5                # Jupyter kernel
-
-# Utilities
-tqdm==4.66.5                     # Progress bars
-seaborn==0.13.2                  # Statistical visualization (for confusion matrix)
-streamlit==1.60.0                # Interactive pipeline explorer (app.py)
+# Interactive app
+streamlit==1.60.0                  # Live pipeline explorer (app.py)
 
 # =============================================================================
 # WARNING: The following are STRICTLY PROHIBITED in this project

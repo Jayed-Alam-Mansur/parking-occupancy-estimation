@@ -1,0 +1,17 @@
+# Streamlit configuration. Applies locally and on Community Cloud.
+
+[theme]
+base = "dark"
+primaryColor = "#e8543f"          # the red used for OCCUPIED bays
+backgroundColor = "#0e1117"
+secondaryBackgroundColor = "#1a1d24"
+textColor = "#fafafa"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+# The app only ever reads committed sample frames and config artifacts;
+# nothing is uploaded.
+maxUploadSize = 5

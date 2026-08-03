@@ -1,0 +1,23 @@
+# =============================================================================
+# Development dependencies — needed to RUN THE NOTEBOOKS, not the app.
+#
+#   pip install -r requirements-dev.txt
+#
+# Deliberately kept out of requirements.txt: Streamlit Community Cloud installs
+# that file, and shipping the full Jupyter stack to the deployment would add
+# minutes to every build and risk dependency-resolution conflicts, for packages
+# app.py never imports.
+# =============================================================================
+
+-r requirements.txt
+
+# Jupyter
+jupyter==1.1.1                   # Interactive notebook environment
+ipykernel==6.29.5                # Jupyter kernel
+
+# Notebook-only plotting
+seaborn==0.13.2                  # Confusion-matrix heatmaps in src/evaluate.py
+                                 # (imported by the notebooks, not by app.py)
+
+# Utilities
+tqdm==4.66.5                     # Progress bars

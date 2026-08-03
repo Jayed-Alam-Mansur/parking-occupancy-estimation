@@ -239,7 +239,34 @@ Runs entirely on the **21 curated frames committed to `data/samples/`** — the 
 
 Fourteen sliders in the sidebar expose every parameter the pipeline uses — CLAHE clip limit, kernel sizes, adaptive block size, Canny bounds, morphology kernels, core-mask erosion and all three decision thresholds. **They start at the exact tuned values in `config/`**, so the app reproduces the committed configuration until you deliberately break it.
 
-> 💡 **Why this is worth demoing.** Crank the CLAHE clip limit and watch noise get amplified into fake edges. Drop the core-mask erosion to zero and watch neighbouring cars leak across shared painted lines. The failure modes argued for in the write-up become something you can *show* rather than assert.
+> 💡 **Why this is worth demoing.** Drop the core-mask erosion to zero and watch neighbouring cars leak across shared painted lines — accuracy falls **7.05 points** and mean edge density *rises*, because it is now measuring the neighbour's car. Push the morphological opening kernel from 3 to 7 and watch it eat the cars themselves (**−10.01 points**). The failure modes argued for in the write-up become something you can *show* rather than assert. Measured numbers and a demo run-sheet are in [`STREAMLIT_DEMO_SCRIPT.md`](docs/presentation/STREAMLIT_DEMO_SCRIPT.md).
+
+### ☁️ Deploying to Streamlit Community Cloud (free)
+
+The repository is deploy-ready — no dataset upload, no secrets, no build config.
+
+1. Go to **[share.streamlit.io](https://share.streamlit.io)** and sign in with GitHub.
+2. **New app → Deploy a public app from a repo**, then set:
+
+   | Field | Value |
+   |---|---|
+   | Repository | `Jayed-Alam-Mansur/parking-occupancy-estimation` |
+   | Branch | `main` |
+   | Main file path | `app.py` |
+   | Python version | `3.12` |
+
+3. Click **Deploy**. First build installs `requirements.txt` (~1 min) and the app comes up at
+   `https://<your-subdomain>.streamlit.app`.
+
+**Why it works on the free tier:**
+
+- **No dataset needed.** The app reads only the 21 curated frames in `data/samples/` (7.6 MB, committed). The 7.5 GB PKLot download is gitignored and irrelevant to the deployment.
+- **Headless OpenCV.** `requirements.txt` pins `opencv-python-headless`, avoiding the `libGL.so.1` import failure that the standard wheel hits on Streamlit's containers.
+- **Small dependency set.** Six runtime packages, verified to resolve conflict-free in a clean environment. Jupyter and seaborn are quarantined in `requirements-dev.txt`.
+- **Comfortably inside the 1 GB memory limit.** A full 100-bay pass allocates small per-slot crops and takes ~75 ms; results are cached per parameter combination.
+- **Theme committed.** `.streamlit/config.toml` sets the dark theme and disables usage-stat collection, so the deployed app looks identical to local.
+
+> ⚠️ **Free-tier apps sleep after ~7 days of inactivity** and take a few seconds to wake. If you are presenting from the deployed URL, **open it a few minutes beforehand** so it is warm — or just run it locally, which has no cold start.
 
 ### The nine acts
 
@@ -730,13 +757,18 @@ which python            # → .../parking-occupancy-estimation/venv/bin/python
 
 ```bash
 pip install --upgrade pip
+
+# Runtime only — enough for src/ and the Streamlit app
 pip install -r requirements.txt
+
+# To also run the notebooks (adds Jupyter, seaborn)
+pip install -r requirements-dev.txt
 ```
 
 Verify the core stack imports cleanly:
 
 ```bash
-python -c "import cv2, numpy, matplotlib, pandas, seaborn, yaml; \
+python -c "import cv2, numpy, matplotlib, pandas, yaml, streamlit; \
 print('OpenCV', cv2.__version__); print('NumPy', numpy.__version__)"
 ```
 
@@ -867,22 +899,33 @@ Without this, a `git add .` would attempt to commit **8.2 GB** of virtual enviro
 
 ## 📦 Requirements
 
-### Declared dependencies (`requirements.txt`)
+### Declared dependencies
+
+Dependencies are split in two, because **Streamlit Community Cloud installs `requirements.txt`** — shipping the whole Jupyter stack to a deployment that never imports it would add minutes to every build and invite resolver conflicts.
+
+#### `requirements.txt` — runtime (what `src/` and `app.py` need)
 
 | Package | Pinned version | Purpose | Actually imported? |
 |---------|---------------|---------|--------------------|
-| `opencv-python` | **4.10.0.84** | Core computer vision — every transform, filter, threshold, morphology and feature operation | ✅ Yes — `src/` (11 modules) and all notebooks |
+| `opencv-python-headless` | **4.10.0.84** | Core computer vision — every transform, filter, threshold, morphology and feature operation | ✅ Yes — `src/` (11 modules), all notebooks, `app.py` |
 | `numpy` | **1.26.4** | Array operations, linear algebra, statistics | ✅ Yes — everywhere |
 | `matplotlib` | **3.9.2** | All plotting and figure generation | ✅ Yes — `visualize.py`, `evaluate.py`, `utils.py`, all notebooks |
-| `pandas` | **2.2.2** | CSV export/import, feature tables, summary statistics | ✅ Yes — `io_utils.py`, notebooks 01, 02, 06, 07, 08, 09 |
+| `pandas` | **2.2.2** | CSV export/import, feature tables, summary statistics | ✅ Yes — `io_utils.py`, `app.py`, notebooks 01, 02, 06–09 |
 | `PyYAML` | **6.0.2** | Reads `config.yaml` and reads/writes `thresholds.yaml` | ✅ Yes — `utils.py`, `decide.py` |
-| `seaborn` | **0.13.2** | Confusion-matrix heat-map rendering | ✅ Yes — `evaluate.py` only |
+| `streamlit` | **1.60.0** | Interactive pipeline explorer | ✅ Yes — `app.py` |
+
+> **Why `-headless`?** It is the same OpenCV build minus the GUI functions (`imshow`, `namedWindow`, `waitKey`) — **none of which this project calls anywhere**, verified by grep. The regular `opencv-python` wheel links against `libGL.so.1`, which is absent from Streamlit Cloud containers and fails at import. The headless wheel is a drop-in and works identically locally.
+
+#### `requirements-dev.txt` — additionally needed to run the notebooks
+
+| Package | Pinned version | Purpose | Actually imported? |
+|---------|---------------|---------|--------------------|
 | `jupyter` | **1.1.1** | Notebook environment | ✅ Yes — runtime |
 | `ipykernel` | **6.29.5** | Jupyter kernel backend | ✅ Yes — runtime |
-| `scikit-image` | **0.24.0** | Listed as "supplementary image processing functions" | ⚠️ **Never imported.** No `import skimage` exists anywhere in `src/` or `notebooks/`. |
+| `seaborn` | **0.13.2** | Confusion-matrix heat-map rendering | ✅ Yes — `evaluate.py` only, which `app.py` does not import |
 | `tqdm` | **4.66.5** | Listed for progress bars | ⚠️ **Never imported.** Notebooks print progress with plain `print()` every 5–20 frames. |
 
-Two packages are therefore installable-but-unused. They are documented here rather than silently removed, because `requirements.txt` is a project artifact and this README describes what exists.
+`scikit-image==0.24.0` was declared in the original requirements and **never imported anywhere** — no `import skimage` exists in `src/` or `notebooks/`. It has been dropped rather than carried into a deployment that would spend build minutes compiling it. `tqdm` is likewise unused but retained in the dev file as a harmless, tiny pure-Python install.
 
 ### Standard-library modules used
 
@@ -3223,7 +3266,7 @@ Only entities that genuinely contributed to this work are listed.
 | **[PyYAML](https://pyyaml.org/)** (6.0.2) | Configuration and tuned-threshold persistence. |
 | **[Jupyter](https://jupyter.org/)** / **[jupytext](https://jupytext.readthedocs.io/)** | The notebook environment, and the `.py`/`.ipynb` pairing that keeps notebooks reviewable. |
 
-> `scikit-image` (0.24.0) and `tqdm` (4.66.5) are listed in `requirements.txt` but are **never imported** anywhere in this codebase. They are noted here for accuracy rather than credited.
+> `scikit-image` (0.24.0) was originally declared but **never imported** anywhere in this codebase, and has since been dropped. `tqdm` (4.66.5) is likewise never imported; it remains in `requirements-dev.txt` only. Both are noted here for accuracy rather than credited.
 
 ### Dataset
 
