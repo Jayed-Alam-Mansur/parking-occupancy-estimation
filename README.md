@@ -217,7 +217,28 @@ Development happened across nine sequential notebooks. For reading, presenting o
 | **Read the whole project as one story** | [`notebooks/00_COMPLETE_PROJECT.ipynb`](notebooks/00_COMPLETE_PROJECT.ipynb) | 160 cells · 9 acts · all 120 outputs and 33 figures intact. Clickable act navigation in the prologue. |
 | **Present it live** | [`docs/presentation/parking-occupancy-presentation.html`](docs/presentation/parking-occupancy-presentation.html) | Standalone, self-contained. No Jupyter, no kernel, no way to wipe an output mid-talk. Download and double-click. |
 | **Follow the talk track** | [`docs/presentation/PRESENTATION_SCRIPT.md`](docs/presentation/PRESENTATION_SCRIPT.md) | Act-by-act speaker script, prepared Q&A, and a timing card with cut markers for a 7-minute version. |
+| **Play with it live** | [`app.py`](app.py) — `streamlit run app.py` | Interactive explorer. Move a slider, watch the pipeline recompute. See below. |
 | **Audit the original work** | [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb) → [`09_final_report.ipynb`](notebooks/09_final_report.ipynb) | The nine development notebooks, untouched. These remain the source of truth. |
+
+### 🎛️ The interactive explorer
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Runs entirely on the **21 curated frames committed to `data/samples/`** — the 7.5 GB PKLot download is *not* required. Every stage calls the same `src/` functions the notebooks call; nothing is reimplemented.
+
+| Tab | What it does |
+|---|---|
+| **🔬 Pipeline Explorer** | Original vs bird's-eye view side by side, then one bay walked through all nine stages — ROI → grayscale → CLAHE → Gaussian → median → Otsu → adaptive → fused → morphology — ending in its eight features, weighted contributions and verdict against ground truth. |
+| **🅿️ Whole Lot** | All 100 bays annotated green/red with live occupancy %, accuracy against ground truth, frame time, and a false-occupied / false-vacant split. |
+| **🎚️ The Twist (Act 8)** | The Act 8 finding, live: sweep a single `edge_density` cutoff and watch the one-number baseline beat the full eight-feature cascade. |
+| **📖 The Story** | The nine-act narrative and headline results, for reference while demoing. |
+
+Fourteen sliders in the sidebar expose every parameter the pipeline uses — CLAHE clip limit, kernel sizes, adaptive block size, Canny bounds, morphology kernels, core-mask erosion and all three decision thresholds. **They start at the exact tuned values in `config/`**, so the app reproduces the committed configuration until you deliberately break it.
+
+> 💡 **Why this is worth demoing.** Crank the CLAHE clip limit and watch noise get amplified into fake edges. Drop the core-mask erosion to zero and watch neighbouring cars leak across shared painted lines. The failure modes argued for in the write-up become something you can *show* rather than assert.
 
 ### The nine acts
 

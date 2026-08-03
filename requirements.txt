@@ -24,6 +24,7 @@ ipykernel==6.29.5                # Jupyter kernel
 # Utilities
 tqdm==4.66.5                     # Progress bars
 seaborn==0.13.2                  # Statistical visualization (for confusion matrix)
+streamlit==1.60.0                # Interactive pipeline explorer (app.py)
 
 # =============================================================================
 # WARNING: The following are STRICTLY PROHIBITED in this project
