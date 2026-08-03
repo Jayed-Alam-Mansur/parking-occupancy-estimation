@@ -18,8 +18,9 @@ import streamlit as st
 
 from src.decide import classify_slot, load_thresholds, weighted_score
 from src.features import extract_all_features
-from src.geometry import load_homography, warp_perspective
-from src.io_utils import parse_pklot_xml
+from src.geometry import (compute_homography, load_homography,
+                          transform_points, warp_perspective)
+from src.io_utils import parse_pklot_xml, quality_gate
 from src.morphology import clean_binary_mask
 from src.preprocessing import (apply_clahe, apply_gaussian_blur,
                                apply_median_blur, to_grayscale)
@@ -27,7 +28,7 @@ from src.roi import (create_eroded_core_mask, extract_slot_image,
                      load_slots_json)
 from src.segmentation import adaptive_threshold, fuse_channels, otsu_threshold
 from src.stats import compute_statistics
-from src.visualize import annotate_parking_image
+from src.visualize import annotate_parking_image, create_legend
 
 st.set_page_config(page_title="Parking Occupancy — Classical CV",
                    page_icon="🅿️", layout="wide")
@@ -44,7 +45,9 @@ def load_assets():
     h = load_homography('config/homography.npz')
     slots = load_slots_json('config/slots.json')
     thresholds, weights = load_thresholds('config/thresholds.yaml')
-    return h['H'], h['output_size'], slots, thresholds, weights
+    return (h['H'], h['output_size'], slots, thresholds, weights,
+            np.asarray(h['src_points'], np.float32),
+            np.asarray(h['dst_points'], np.float32))
 
 
 @st.cache_data
@@ -99,7 +102,7 @@ def slot_stages(bev, polygon, p):
 @st.cache_data(show_spinner=False)
 def process_frame(jpg, xml, p, thr):
     """Full 100-bay pass. Cached on (frame, params, thresholds)."""
-    H, size, slots, _, weights = load_assets()
+    H, size, slots, _, weights, _, _ = load_assets()
     img = cv2.imread(jpg)
     t0 = time.perf_counter()
     bev = warp_perspective(img, H, size)
@@ -117,6 +120,107 @@ def process_frame(jpg, xml, p, thr):
     gt = {s['id']: s['occupied'] for s in parse_pklot_xml(xml)}
     return {'img': img, 'bev': bev, 'features': feats, 'labels': labels,
             'confidences': confs, 'gt': gt, 'ms': elapsed}
+
+
+CALIB_W, CALIB_H = 1280, 720          # resolution the homography was solved on
+
+
+def rescale_homography(iw, ih):
+    """Adapt the committed calibration to a different resolution.
+
+    src_points are absolute pixel coordinates, so the same camera at a
+    different resolution needs them scaled — otherwise they address the wrong
+    scene points and every bay lands slightly off. Only valid when the aspect
+    ratio matches; a different aspect ratio means a genuinely different view.
+    """
+    same_aspect = abs(iw / ih - CALIB_W / CALIB_H) < 0.02
+    if not same_aspect:
+        return None, False
+    scaled = SRC_PTS * np.array([iw / CALIB_W, ih / CALIB_H], np.float32)
+    Hn = compute_homography(scaled, DST_PTS)
+    return (Hn[0] if isinstance(Hn, tuple) else Hn), True
+
+
+def decode_upload(raw):
+    """Uploaded bytes → BGR image."""
+    arr = np.frombuffer(raw, np.uint8)
+    return cv2.imdecode(arr, cv2.IMREAD_COLOR)
+
+
+def slots_from_grid(size, rows, cols, margin_x, margin_y, gap):
+    """Synthesise a regular bay layout in BEV coordinates.
+
+    For a lot this pipeline has never been calibrated against, a regular grid is
+    the honest fallback: no annotation file exists, so bays are assumed evenly
+    spaced. Verify the overlay visually before trusting any number it produces.
+    """
+    w, h = size
+    usable_w = w - 2 * margin_x
+    usable_h = h - 2 * margin_y
+    bay_w = (usable_w - gap * (cols - 1)) / cols
+    bay_h = (usable_h - gap * (rows - 1)) / rows
+    slots, sid = {}, 1
+    for r in range(rows):
+        for c in range(cols):
+            x0 = margin_x + c * (bay_w + gap)
+            y0 = margin_y + r * (bay_h + gap)
+            slots[sid] = np.array([[x0, y0], [x0 + bay_w, y0],
+                                   [x0 + bay_w, y0 + bay_h], [x0, y0 + bay_h]],
+                                  dtype=np.float32)
+            sid += 1
+    return slots
+
+
+def slots_from_xml_bytes(raw, H):
+    """PKLot-format XML → BEV bay polygons + ground-truth labels."""
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix='.xml', delete=False) as fh:
+        fh.write(raw)
+        path = fh.name
+    try:
+        parsed = parse_pklot_xml(path)
+    finally:
+        os.unlink(path)
+    slots = {s['id']: transform_points(s['points'], H) for s in parsed}
+    gt = {s['id']: s['occupied'] for s in parsed}
+    return slots, gt
+
+
+def alignment_report(bev, slots, min_coverage=0.5):
+    """How many bays actually sit on real image content?
+
+    This guards against a silently wrong result. Checking that a polygon falls
+    inside the canvas is NOT enough — `warp_perspective` always returns the full
+    BEV canvas, so a mismatched homography still puts every bay "in bounds",
+    just over black padding where no source pixel mapped. So measure the
+    fraction of each bay that is actually non-black, and treat bays sitting on
+    emptiness as unusable.
+    """
+    gray = cv2.cvtColor(bev, cv2.COLOR_BGR2GRAY) if bev.ndim == 3 else bev
+    usable = 0
+    for poly in slots.values():
+        crop, _, mask = extract_slot_image(gray, poly)
+        if not crop.size or min(crop.shape[:2]) < 4:
+            continue
+        inside = mask > 0
+        if not inside.any():
+            continue
+        if (crop[inside] > 0).mean() >= min_coverage:
+            usable += 1
+    return usable, len(slots)
+
+
+def run_custom(bev, slots, p, thr, weights):
+    """Full pass over an arbitrary bay layout."""
+    feats, labels, confs = {}, {}, {}
+    for sid, poly in slots.items():
+        s = slot_stages(bev, poly, p)
+        if s is None or min(s['slot'].shape[:2]) < 4:
+            continue
+        feats[sid] = s['features']
+        lab, conf, _ = classify_slot(s['features'], dict(thr), weights)
+        labels[sid], confs[sid] = lab, conf
+    return feats, labels, confs
 
 
 def score_against_gt(labels, gt):
@@ -150,7 +254,7 @@ def corpus_features(p, thr):
 
 # ───────────────────────────────────────────────────────── sidebar
 
-H, SIZE, SLOTS, TUNED, WEIGHTS = load_assets()
+H, SIZE, SLOTS, TUNED, WEIGHTS, SRC_PTS, DST_PTS = load_assets()
 samples = list_samples()
 
 st.sidebar.title("🅿️ Controls")
@@ -231,8 +335,9 @@ st.title("Parking Occupancy Estimation — Classical Image Processing")
 st.caption("One camera. No sensors. No machine learning. "
            "Move any slider and the whole pipeline recomputes live.")
 
-tab1, tab2, tab3, tab4 = st.tabs([
-    "🔬 Pipeline Explorer", "🅿️ Whole Lot", "🎚️ The Twist (Act 8)", "📖 The Story"])
+tab1, tab2, tab5, tab3, tab4 = st.tabs([
+    "🔬 Pipeline Explorer", "🅿️ Whole Lot", "📤 Your Own Image",
+    "🎚️ The Twist (Act 8)", "📖 The Story"])
 
 
 # ── Tab 1 — stage by stage on one bay ────────────────────────────────
@@ -324,6 +429,218 @@ with tab2:
     f1txt = f"{m['f1']:.3f}" if (m['tp'] + m['fn']) else "n/a (no occupied bays)"
     st.caption(f"Confusion on {m['n']} bays — TP {m['tp']} · TN {m['tn']} · "
                f"FP {m['fp']} · FN {m['fn']} · F1 {f1txt}")
+
+
+# ── Tab 5 — bring your own image ─────────────────────────────────────
+with tab5:
+    st.subheader("Run the pipeline on your own image")
+    st.markdown(
+        "Upload any parking-lot photo and push it through the identical "
+        "pipeline. Two things have to be true before the numbers mean "
+        "anything: the **perspective** must be corrected for *your* camera, "
+        "and the system must know **where the bays are**. Both are set below.")
+
+    up = st.file_uploader("Parking-lot image", type=['jpg', 'jpeg', 'png'],
+                          key='own_img')
+
+    if up is None:
+        st.info("Waiting for an image. If you just want to see it work, any "
+                "frame from `data/samples/` is a same-camera image and will "
+                "align perfectly with the committed calibration.")
+    else:
+        img = decode_upload(up.getvalue())
+        if img is None:
+            st.error("Could not decode that file as an image.")
+            st.stop()
+
+        ih, iw = img.shape[:2]
+
+        # ---- Act 1's quality gate, applied to user input ----
+        passes, diag = quality_gate(img)
+        q1, q2, q3 = st.columns(3)
+        q1.metric("Resolution", f"{iw} × {ih}")
+        q2.metric("Brightness", f"{diag['brightness']:.0f}",
+                  "too dark" if diag['too_dark'] else "ok",
+                  delta_color="inverse" if diag['too_dark'] else "normal")
+        q3.metric("Sharpness (Laplacian var)", f"{diag['blur_score']:.0f}",
+                  "too blurry" if diag['too_blurry'] else "ok",
+                  delta_color="inverse" if diag['too_blurry'] else "normal")
+        if not passes:
+            st.warning("This image fails the Act 1 quality gate. The pipeline "
+                       "will still run, but treat the output as unreliable.")
+
+        st.markdown("---")
+        c_geo, c_lay = st.columns(2)
+
+        # ---- geometry ----
+        with c_geo:
+            st.markdown("**1 · Perspective correction**")
+            geo = st.radio(
+                "Homography", ["Committed calibration", "Calibrate for this image"],
+                key='geo_mode', label_visibility='collapsed',
+                captions=["Correct only if this is the same camera as PKLot "
+                          "`parking2` (1280×720).",
+                          "Pick the four ground-plane corners yourself."])
+
+            if geo == "Committed calibration":
+                size_u = SIZE
+                if (iw, ih) == (CALIB_W, CALIB_H):
+                    Hu = H
+                    st.success(f"Exact match for the calibration resolution "
+                               f"({CALIB_W}×{CALIB_H}).")
+                else:
+                    Hs, ok_aspect = rescale_homography(iw, ih)
+                    if ok_aspect:
+                        Hu = Hs
+                        st.info(f"This image is {iw}×{ih}, not the "
+                                f"{CALIB_W}×{CALIB_H} the homography was solved "
+                                f"on — but the aspect ratio matches, so the "
+                                f"calibration points were **rescaled by "
+                                f"{iw / CALIB_W:.2f}×**. Valid if this is the "
+                                f"same camera at a different resolution.")
+                    else:
+                        Hu = H
+                        st.error(f"This image is {iw}×{ih}, a different aspect "
+                                 f"ratio from the calibration "
+                                 f"({CALIB_W}×{CALIB_H}). The committed "
+                                 f"homography cannot be adapted to it — "
+                                 f"switch to *Calibrate for this image*.")
+            else:
+                st.caption("Corners as fractions of width/height, clockwise "
+                           "from top-left. Defaults are the committed values.")
+                defaults = [(-0.011, 0.216), (0.943, 0.216),
+                            (0.943, 0.819), (-0.011, 0.819)]
+                names = ["top-left", "top-right", "bottom-right", "bottom-left"]
+                pts = []
+                for nm, (dx, dy) in zip(names, defaults):
+                    a, b = st.columns(2)
+                    fx = a.number_input(f"{nm} x", -0.3, 1.3, dx, 0.005,
+                                        key=f'fx_{nm}', format="%.3f")
+                    fy = b.number_input(f"{nm} y", -0.3, 1.3, dy, 0.005,
+                                        key=f'fy_{nm}', format="%.3f")
+                    pts.append([fx * iw, fy * ih])
+                src = np.array(pts, dtype=np.float32)
+                bw = st.select_slider("BEV width", [600, 800, 1000], value=800,
+                                      key='bev_w')
+                bh = st.select_slider("BEV height", [800, 1000, 1200], value=1000,
+                                      key='bev_h')
+                m = 30
+                dst = np.array([[m, m], [bw - m, m], [bw - m, bh - m], [m, bh - m]],
+                               dtype=np.float32)
+                Hu = compute_homography(src, dst)
+                if isinstance(Hu, tuple):
+                    Hu = Hu[0]
+                size_u = (bw, bh)
+
+        bev_u = warp_perspective(img, Hu, size_u)
+
+        # ---- bay layout ----
+        with c_lay:
+            st.markdown("**2 · Where are the bays?**")
+            lay = st.radio(
+                "Layout", ["Committed slots.json (100 bays)",
+                           "Upload matching PKLot XML",
+                           "Generate a regular grid"],
+                key='lay_mode', label_visibility='collapsed')
+
+            gt_u = None
+            if lay == "Committed slots.json (100 bays)":
+                slots_u = SLOTS
+                st.caption("The 100 hand-calibrated bays from Act 3. Only "
+                           "valid for the same camera *and* the committed "
+                           "homography.")
+            elif lay == "Upload matching PKLot XML":
+                xup = st.file_uploader("PKLot-format XML", type=['xml'],
+                                       key='own_xml')
+                if xup is None:
+                    st.info("Upload the XML that pairs with this frame. It "
+                            "gives both the bay polygons and ground truth, so "
+                            "accuracy can be scored.")
+                    slots_u = {}
+                else:
+                    slots_u, gt_u = slots_from_xml_bytes(xup.getvalue(), Hu)
+                    st.success(f"{len(slots_u)} bays and ground-truth labels "
+                               f"loaded from XML.")
+            else:
+                g1, g2 = st.columns(2)
+                rows = g1.slider("Rows", 1, 12, 4, key='g_rows')
+                cols = g2.slider("Bays per row", 2, 40, 20, key='g_cols')
+                mx = g1.slider("Margin X", 0, 200, 40, key='g_mx')
+                my = g2.slider("Margin Y", 0, 200, 60, key='g_my')
+                gap = st.slider("Gap between bays", 0, 20, 2, key='g_gap')
+                slots_u = slots_from_grid(size_u, rows, cols, mx, my, gap)
+                st.caption(f"{len(slots_u)} synthetic bays. No annotation file "
+                           f"exists for an unknown lot, so bays are assumed "
+                           f"evenly spaced — check the overlay before trusting "
+                           f"the count.")
+
+        if not slots_u:
+            st.stop()
+
+        # ---- alignment guard ----
+        usable, total = alignment_report(bev_u, slots_u)
+        frac = usable / max(total, 1)
+        st.markdown("---")
+        if frac < 0.8:
+            st.error(f"**Alignment check failed — {usable} of {total} bays "
+                     f"landed inside the warped view.** The layout does not "
+                     f"match this image, so any occupancy number below is "
+                     f"meaningless. Recalibrate the corners, or switch to a "
+                     f"generated grid.")
+        else:
+            st.success(f"Alignment check: {usable} of {total} bays landed "
+                       f"inside the warped view.")
+
+        # ---- run it ----
+        t0 = time.perf_counter()
+        feats_u, labels_u, confs_u = run_custom(bev_u, slots_u, P, THR, WEIGHTS)
+        ms_u = (time.perf_counter() - t0) * 1000
+
+        if not labels_u:
+            st.error("No bay produced a usable crop. Check the calibration.")
+            st.stop()
+
+        stats_u = compute_statistics(labels_u)
+        k = st.columns(5)
+        k[0].metric("Occupancy", f"{stats_u['occupancy_pct']:.0f}%")
+        k[1].metric("Occupied", stats_u['occupied'])
+        k[2].metric("Vacant", stats_u['vacant'])
+        k[3].metric("Bays scored", len(labels_u))
+        k[4].metric("Total time", f"{ms_u:.0f} ms")
+
+        if gt_u:
+            mu = score_against_gt(labels_u, gt_u)
+            f1u = f"{mu['f1']:.3f}" if (mu['tp'] + mu['fn']) else "n/a"
+            st.info(f"**Scored against the uploaded ground truth:** "
+                    f"{mu['acc'] * 100:.1f}% accuracy · F1 {f1u} · "
+                    f"false-occupied {mu['fp']} · false-vacant {mu['fn']} "
+                    f"({mu['n']} bays matched)")
+
+        v1, v2 = st.columns(2)
+        with v1:
+            st.markdown("**Your image**")
+            st.image(rgb(img), width='stretch')
+        with v2:
+            st.markdown("**Warped, with the verdict drawn on**")
+            ann_u = annotate_parking_image(bev_u, slots_u, labels_u,
+                                           confidences=confs_u)
+            ann_u = create_legend(ann_u, stats_u)
+            st.image(rgb(ann_u), width='stretch')
+
+        ok, png = cv2.imencode('.png', ann_u)
+        if ok:
+            st.download_button("⬇︎ Download the annotated result",
+                               png.tobytes(),
+                               file_name=f"occupancy_{up.name.rsplit('.', 1)[0]}.png",
+                               mime="image/png")
+
+        with st.expander("Per-bay features and verdicts"):
+            st.dataframe(pd.DataFrame([
+                {'bay': sid, 'verdict': 'OCCUPIED' if labels_u[sid] else 'VACANT',
+                 'confidence': confs_u[sid],
+                 **{k_: feats_u[sid][k_] for k_ in FEATURES}}
+                for sid in sorted(labels_u)]),
+                width='stretch', hide_index=True)
 
 
 # ── Tab 3 — the twist ────────────────────────────────────────────────

@@ -234,8 +234,34 @@ Runs entirely on the **21 curated frames committed to `data/samples/`** — the 
 |---|---|
 | **🔬 Pipeline Explorer** | Original vs bird's-eye view side by side, then one bay walked through all nine stages — ROI → grayscale → CLAHE → Gaussian → median → Otsu → adaptive → fused → morphology — ending in its eight features, weighted contributions and verdict against ground truth. |
 | **🅿️ Whole Lot** | All 100 bays annotated green/red with live occupancy %, accuracy against ground truth, frame time, and a false-occupied / false-vacant split. |
+| **📤 Your Own Image** | Upload any parking-lot photo and run the identical pipeline on it. See below. |
 | **🎚️ The Twist (Act 8)** | The Act 8 finding, live: sweep a single `edge_density` cutoff and watch the one-number baseline beat the full eight-feature cascade. |
 | **📖 The Story** | The nine-act narrative and headline results, for reference while demoing. |
+
+#### 📤 Running it on a new image
+
+The **Your Own Image** tab takes an upload and pushes it through the same stages. Two things must be true before any number means anything, and the tab makes both explicit rather than assuming them:
+
+**1 · Perspective correction.** The committed homography was solved on 1280×720 frames from PKLot `parking2`. The tab detects your resolution and reacts:
+
+| Your image | What happens |
+|---|---|
+| Exactly 1280×720 | Committed homography used as-is |
+| Different size, **same** aspect ratio | Calibration points are **rescaled automatically**. Verified to fully recover accuracy — a 1920×1080 copy of a sample frame scores 29.3 % with the raw homography and **56.6 % once rescaled**, identical to native resolution |
+| Different aspect ratio | Blocked with an error; recalibrate instead |
+| A different camera entirely | Choose **Calibrate for this image** and set the four ground-plane corners yourself |
+
+**2 · Bay layout.** Where the parking bays are:
+
+| Option | Use when |
+|---|---|
+| **Committed `slots.json`** | Same camera — the 100 hand-calibrated bays from Act 3 |
+| **Upload matching PKLot XML** | You have annotations. Supplies the polygons *and* ground truth, so the tab scores accuracy, F1 and the false-occupied / false-vacant split |
+| **Generate a regular grid** | Unknown lot with no annotations. Bays are *assumed* evenly spaced — check the overlay before trusting the count |
+
+**The alignment guard.** Before reporting anything, the tab counts how many bays sit on real image content. This is deliberately not a bounds check: `warpPerspective` always returns the full BEV canvas, so a mismatched homography still leaves every bay technically "in bounds" — just sitting over black padding where no source pixel mapped. Measuring non-black coverage instead catches the mismatches that a bounds check waves through (a wrongly-scaled image drops to 32 % of bays usable, a cropped one to 54 %). Below 80 %, the tab refuses to present the occupancy figure as meaningful.
+
+Also reused here: **Act 1's quality gate**, reporting brightness and Laplacian-variance sharpness, warning when an image is too dark or too blurry to trust. Results download as an annotated PNG, with a per-bay table of all eight features and verdicts.
 
 Fourteen sliders in the sidebar expose every parameter the pipeline uses — CLAHE clip limit, kernel sizes, adaptive block size, Canny bounds, morphology kernels, core-mask erosion and all three decision thresholds. **They start at the exact tuned values in `config/`**, so the app reproduces the committed configuration until you deliberately break it.
 
