@@ -217,6 +217,7 @@ Development happened across nine sequential notebooks. For reading, presenting o
 | **Read the whole project as one story** | [`notebooks/00_COMPLETE_PROJECT.ipynb`](notebooks/00_COMPLETE_PROJECT.ipynb) | 160 cells · 9 acts · all 120 outputs and 33 figures intact. Clickable act navigation in the prologue. |
 | **Present it live** | [`docs/presentation/parking-occupancy-presentation.html`](docs/presentation/parking-occupancy-presentation.html) | Standalone, self-contained. No Jupyter, no kernel, no way to wipe an output mid-talk. Download and double-click. |
 | **Follow the talk track** | [`docs/presentation/PRESENTATION_SCRIPT.md`](docs/presentation/PRESENTATION_SCRIPT.md) | Act-by-act speaker script, prepared Q&A, and a timing card with cut markers for a 7-minute version. |
+| **Demo the app live** | [`docs/presentation/STREAMLIT_DEMO_SCRIPT.md`](docs/presentation/STREAMLIT_DEMO_SCRIPT.md) | Six-minute demo run for `app.py`: which sliders to break, measured before/after numbers, and the landmines to avoid on stage. |
 | **Play with it live** | [`app.py`](app.py) — `streamlit run app.py` | Interactive explorer. Move a slider, watch the pipeline recompute. See below. |
 | **Audit the original work** | [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb) → [`09_final_report.ipynb`](notebooks/09_final_report.ipynb) | The nine development notebooks, untouched. These remain the source of truth. |
 
