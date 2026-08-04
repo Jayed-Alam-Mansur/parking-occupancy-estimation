@@ -165,7 +165,7 @@ if frames and H is not None:
 
 # %% [markdown]
 # ## 5. Visualize All ROIs
-# Let's draw the full layout to verify the ROIs are correct.
+# Draw the full layout to verify the ROIs are correct.
 
 # %%
 if frames and H is not None:
@@ -198,15 +198,16 @@ if frames and H is not None:
 # ## Phase Summary
 #
 # ### What we accomplished
-# 1. ✅ Transformed original slot polygons into BEV coordinates
-# 2. ✅ Built extraction logic for bounding box + binary mask
-# 3. ✅ Implemented the **eroded core mask** to solve adjacent-car overlap
-# 4. ✅ Visualized the ROI extraction pipeline
-# 5. ✅ Saved canonical BEV slot coordinates to `config/slots.json`
+# 1. Transformed original slot polygons into BEV coordinates
+# 2. Built extraction logic for bounding box + binary mask
+# 3. Implemented the **eroded core mask** to solve adjacent-car overlap
+# 4. Visualized the ROI extraction pipeline
+# 5. Saved canonical BEV slot coordinates to `config/slots.json`
 #
 # ### Key insights
 # - The eroded mask is a critical classical technique to isolate the signal.
 # - Without it, a white SUV parked next to an empty slot might cause the empty slot to look occupied.
 #
-# ### Next Steps
-# Now that we have clean, masked, BEV image patches for every slot, we are ready for **Phase 6: Image Preprocessing** and **Phase 7: Segmentation**. We'll move on to those in Notebook 04!
+# ### Notebook 04 — Image Preprocessing
+# With clean, masked, BEV image patches for every slot, the next step is
+# preprocessing (Phase 6) and segmentation (Phase 7).

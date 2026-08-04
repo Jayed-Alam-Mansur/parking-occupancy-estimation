@@ -457,14 +457,14 @@ print(f"Test frame F1:       {test_metrics['f1_score']:.4f}")
 # ## Phase Summary
 #
 # ### What we accomplished
-# 1. ✅ Swept edge density threshold → found optimal operating point
-# 2. ✅ Swept weighted score threshold → multi-feature decision boundary
-# 3. ✅ Set fast-path thresholds from data percentiles
-# 4. ✅ Evaluated the full cascade: accuracy, precision, recall, F1
-# 5. ✅ Generated confusion matrix heatmap
-# 6. ✅ Per-weather breakdown shows robustness
-# 7. ✅ Saved tuned `config/thresholds.yaml`
-# 8. ✅ End-to-end pipeline test on a fresh frame
+# 1. Swept edge density threshold and found optimal operating point
+# 2. Swept weighted score threshold for multi-feature decision boundary
+# 3. Set fast-path thresholds from data percentiles
+# 4. Evaluated the full cascade: accuracy, precision, recall, F1
+# 5. Generated confusion matrix heatmap
+# 6. Per-weather breakdown shows robustness
+# 7. Saved tuned `config/thresholds.yaml`
+# 8. End-to-end pipeline test on a fresh frame
 #
 # ### Key results
 # - The system achieves strong performance using pure classical methods
@@ -472,6 +472,6 @@ print(f"Test frame F1:       {test_metrics['f1_score']:.4f}")
 # - The cascade fast-path handles >60% of slots without full scoring
 # - Performance is consistent across weather conditions
 #
-# ### Day 2 Complete!
-# The pipeline is now fully operational. Day 3 will focus on large-scale
-# evaluation, timing benchmarks, and the final report notebook.
+# ### Notebook 08 — Large-Scale Evaluation
+# The pipeline is now fully operational. The next step is large-scale
+# evaluation, timing benchmarks, and the final report.

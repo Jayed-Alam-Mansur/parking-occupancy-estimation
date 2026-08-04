@@ -19,7 +19,7 @@ JPEG_Q = 90
 
 # ---------------------------------------------------------------- narrative
 
-PROLOGUE = r"""# 🅿️ Finding a Parking Space With Nothing but Mathematics
+PROLOGUE = r"""# Finding a Parking Space With Nothing but Mathematics
 
 ### Automatic Parking Occupancy Estimation using Classical Image Processing
 **Course:** Digital Image Processing  **Author:** Jayed Alam Mansur
@@ -105,9 +105,8 @@ interesting thing in this project.
 > were recompressed to JPEG to keep the file openable.
 """
 
-SETUP = '''# ═══════════════════════════════════════════════════════════════════════
-#  Setup — every import used anywhere in this project, in one place
-# ═══════════════════════════════════════════════════════════════════════
+SETUP = '''# Setup — every import used anywhere in this project, in one place
+# -----------------------------------------------------------------
 import os, sys, time
 from pathlib import Path
 
@@ -116,7 +115,7 @@ if os.path.basename(os.getcwd()) == 'notebooks':
     os.chdir('..')
 sys.path.insert(0, os.path.abspath('.'))
 
-# ── Third-party: image processing and plotting only ──────────────────
+# Third-party: image processing and plotting only
 #    Note what is absent: no tensorflow, no torch, no ultralytics.
 import cv2
 import numpy as np
@@ -125,7 +124,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
 %matplotlib inline
 
-# ── My own modules, one per pipeline stage (see src/) ────────────────
+# Project modules, one per pipeline stage (see src/)
 from src.utils        import load_config, display_images, print_separator
 from src.io_utils     import (list_frames, parse_pklot_xml, quality_gate,
                               export_ground_truth_csv, curate_samples,
@@ -179,7 +178,7 @@ images of three car parks across sunny, cloudy and rainy weather, each with
 per-bay polygon annotations and an occupied/vacant label. That last part is
 what makes honest evaluation possible later.
 
-> 👀 **Watch for:** the sample grid. Sunny frames have brutal shadows that look
+> **Note:** the sample grid. Sunny frames have brutal shadows that look
 > exactly like dark cars. That single observation drives half the design
 > decisions in Acts 4 and 5.
 """),
@@ -202,7 +201,7 @@ re-photograph the lot from an imaginary camera hovering directly overhead.
 
 $$s\begin{bmatrix}x'\\y'\\1\end{bmatrix} = \mathbf{H}\begin{bmatrix}x\\y\\1\end{bmatrix}$$
 
-> 👀 **Watch for:** the before/after comparison. Bays that were trapezoids
+> **Note:** the before/after comparison. Bays that were trapezoids
 > become rectangles of near-identical size. That is what makes every later
 > measurement fair.
 """),
@@ -225,7 +224,7 @@ The fix is deliberately unglamorous — **erode each mask inward** and only
 measure the confident core of each bay. I trade a little signal for a lot of
 independence.
 
-> 👀 **Watch for:** the ROI grid. 100 clean, separated, near-identical
+> **Note:** the ROI grid. 100 clean, separated, near-identical
 > rectangles. Compare that to the raw frame in Act 1 and the value of the last
 > two acts becomes obvious.
 """),
@@ -252,7 +251,7 @@ The order is not arbitrary. Median comes *after* Gaussian because impulse noise
 is a rank-order problem, not a convolution problem — you cannot average away a
 single wildly-wrong pixel, but you can rank it out.
 
-> 👀 **Watch for:** the CLAHE histograms. A cramped, bunched-up histogram
+> **Note:** the CLAHE histograms. A cramped, bunched-up histogram
 > spreads across the full range — that is contrast being manufactured out of
 > nothing but arithmetic.
 """),
@@ -280,7 +279,7 @@ keeping its *hue* — asphalt in shadow is still asphalt-coloured.
 Finally, **morphology** cleans the binary mask: opening removes speckle,
 closing seals holes inside the car body.
 
-> 👀 **Watch for:** the four-way threshold comparison, then the morphology
+> **Note:** the four-way threshold comparison, then the morphology
 > stages. Watch a noisy, scattered mask resolve into one solid car-shaped blob.
 """),
     ("06_features.ipynb", 6, r"""---
@@ -311,7 +310,7 @@ $$F = \frac{(\mu_{occ} - \mu_{vac})^2}{\sigma_{occ}^2 + \sigma_{vac}^2}$$
 High F means the feature separates the two classes cleanly. Low F means it is
 noise wearing a useful-sounding name.
 
-> 👀 **Watch for:** the per-feature histograms, then the Fisher ranking.
+> **Note:** the per-feature histograms, then the Fisher ranking.
 > `edge_density` wins by a wide margin. **Remember that.** It comes back in
 > Act 8 in a way I did not expect.
 """),
@@ -340,7 +339,7 @@ The remaining question is the value of τ. I don't guess that either — I sweep
 it across its whole range and plot accuracy and F1 as functions of the cutoff,
 then read the optimum off the curve.
 
-> 👀 **Watch for:** the threshold sweep. The curve has a broad, flat peak — the
+> **Note:** the threshold sweep. The curve has a broad, flat peak — the
 > system is not balanced on a knife-edge, which is exactly what you want.
 """),
     ("08_evaluation.ipynb", 8, r"""---
@@ -383,7 +382,7 @@ signal.** A complicated system that underperforms its own simplest component
 is telling you something, and the professional move is to listen rather than
 to bury the comparison.
 
-> 👀 **Watch for:** the confusion matrices, the per-weather bars (rainy is the
+> **Note:** the confusion matrices, the per-weather bars (rainy is the
 > hard case), and Section 6 — the twist.
 """),
     ("09_final_report.ipynb", 9, r"""---
@@ -521,7 +520,7 @@ def clean_recap(md: str, act: int) -> str:
     md = re.sub(r"^### Next:.*?(?=^#{1,3} |\Z)", "", md, flags=re.M | re.S)
     md = re.sub(r"^### Next Steps.*?(?=^#{1,3} |\Z)", "", md, flags=re.M | re.S)
     md = re.sub(r"^## (Phase Summary|Day 2 Complete!).*$",
-                f"## ✅ {RECAP_TITLES[act]}", md, flags=re.M)
+                f"## {RECAP_TITLES[act]}", md, flags=re.M)
     md = re.sub(r"^### Day 2 Complete!.*$", "", md, flags=re.M)
     return md.rstrip() + "\n"
 

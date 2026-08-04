@@ -287,7 +287,7 @@ show_and_save_fig(fig,
 # %% [markdown]
 # ## 7. Full Pipeline on Multiple Slots
 #
-# Let's run the complete `preprocess_pipeline()` on several slots
+# Run the complete `preprocess_pipeline()` on several slots
 # from different weather conditions.
 
 # %%
@@ -322,14 +322,14 @@ show_and_save_fig(fig, 'Preprocessed Slots: Sunny vs Cloudy',
 # ## Phase Summary
 #
 # ### What we accomplished
-# 1. ✅ Built and visualized the 4-step preprocessing ladder
-# 2. ✅ Demonstrated CLAHE's contrast enhancement effect via histograms
-# 3. ✅ Compared Gaussian blur vs median filter for edge preservation
-# 4. ✅ Ran the full pipeline across weather conditions
+# 1. Built and visualized the 4-step preprocessing ladder
+# 2. Demonstrated CLAHE's contrast enhancement effect via histograms
+# 3. Compared Gaussian blur vs median filter for edge preservation
+# 4. Ran the full pipeline across weather conditions
 #
 # ### Key insights
 # - **CLAHE** dramatically improves contrast in shadowed/overcast slots
 # - **Median filter** preserves edges better than Gaussian — crucial for Canny
 # - The preprocessing pipeline is deterministic and weather-agnostic
 #
-# ### Next: Notebook 05 — Segmentation & Morphology
+# ### Notebook 05 — Segmentation & Morphology

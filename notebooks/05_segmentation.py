@@ -322,11 +322,11 @@ show_and_save_fig(fig, 'Complete Segmentation Pipeline — 6 Sample Slots',
 # ## Phase Summary
 #
 # ### What we accomplished
-# 1. ✅ Compared Global, Adaptive, and Otsu thresholding on occupied/vacant slots
-# 2. ✅ Demonstrated multi-channel fusion (Otsu ∩ Adaptive) for robust binarisation
-# 3. ✅ Implemented HSV shadow suppression for sunny conditions
-# 4. ✅ Showed all morphological operations and their visual effects
-# 5. ✅ Built the complete segmentation pipeline: Preprocess → Threshold → Fuse → Clean
+# 1. Compared Global, Adaptive, and Otsu thresholding on occupied/vacant slots
+# 2. Demonstrated multi-channel fusion (Otsu + Adaptive) for robust binarisation
+# 3. Implemented HSV shadow suppression for sunny conditions
+# 4. Showed all morphological operations and their visual effects
+# 5. Built the complete segmentation pipeline: Preprocess → Threshold → Fuse → Clean
 #
 # ### Key insights
 # - **Otsu alone** sometimes fails on unimodal histograms (empty asphalt)
@@ -334,4 +334,4 @@ show_and_save_fig(fig, 'Complete Segmentation Pipeline — 6 Sample Slots',
 # - **Opening** (3×3) removes most noise; **Closing** (5×5) fills car-interior holes
 # - Shadow suppression is critical for sunny conditions
 #
-# ### Next: Notebook 06 — Feature Extraction & Analysis
+# ### Notebook 06 — Feature Extraction & Analysis

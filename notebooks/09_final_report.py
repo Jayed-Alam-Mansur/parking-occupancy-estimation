@@ -252,9 +252,8 @@ if os.path.exists(fv_path):
 # ## 7. Tuned Configuration
 
 # %%
-print("=" * 60)
-print("  FINAL TUNED CONFIGURATION")
-print("=" * 60)
+print("FINAL TUNED CONFIGURATION")
+print("-" * 40)
 
 print("\n  Decision Thresholds:")
 for k, v in thresholds.items():
@@ -307,8 +306,7 @@ for k, v in sorted_w:
 # real-time occupancy statistics with colour-coded BEV annotations.
 
 # %%
-print("\n" + "=" * 60)
-print("  PROJECT COMPLETE")
+print("\n" + "-" * 40)
 print("  Automatic Parking Occupancy Estimation")
 print("  Using Classical Image Processing")
-print("=" * 60)
+print("-" * 40)

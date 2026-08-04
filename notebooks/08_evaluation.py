@@ -430,11 +430,11 @@ print("\nDone! Annotated results saved to outputs/annotated/")
 # ## Phase Summary
 #
 # ### What we accomplished
-# 1. ✅ Evaluated pipeline on 100+ frames across sunny/cloudy/rainy
-# 2. ✅ Generated per-weather confusion matrices
-# 3. ✅ Compared single-feature vs multi-feature cascade
-# 4. ✅ Identified error-prone slots for future improvement
-# 5. ✅ Benchmarked per-stage timing and computed FPS
-# 6. ✅ Saved annotated result images for all weather conditions
+# 1. Evaluated pipeline on 100+ frames across sunny/cloudy/rainy
+# 2. Generated per-weather confusion matrices
+# 3. Compared single-feature vs multi-feature cascade
+# 4. Identified error-prone slots for future improvement
+# 5. Benchmarked per-stage timing and computed FPS
+# 6. Saved annotated result images for all weather conditions
 #
-# ### Next: Notebook 09 — Final Report
+# ### Notebook 09 — Final Report

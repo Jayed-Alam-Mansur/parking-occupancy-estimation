@@ -416,18 +416,18 @@ if frames:
 # ## Phase Summary
 #
 # ### What we accomplished
-# 1. ✅ Explained pinhole camera model and homography theory
-# 2. ✅ Selected 4 correspondence points
-# 3. ✅ Computed 3×3 homography matrix H
-# 4. ✅ Warped original view to bird's-eye view
-# 5. ✅ Transformed slot polygon coordinates through H
-# 6. ✅ Validated: slot areas are now much more uniform in BEV
-# 7. ✅ Saved homography to config/homography.npz
+# 1. Explained pinhole camera model and homography theory
+# 2. Selected 4 correspondence points
+# 3. Computed 3×3 homography matrix H
+# 4. Warped original view to bird's-eye view
+# 5. Transformed slot polygon coordinates through H
+# 6. Validated: slot areas are now much more uniform in BEV
+# 7. Saved homography to config/homography.npz
 #
 # ### Key result
-# - Original area ratio: **~8x** → BEV area ratio: **~2x** (much better!)
+# - Original area ratio: **~8x** → BEV area ratio: **~2x** (much better)
 # - This means one set of thresholds can serve ALL slots in the lot
 #
-# ### Next: Notebook 03 — ROI Extraction
-# We'll save the BEV slot coordinates to slots.json and build
-# full + eroded core masks for each slot.
+# ### Notebook 03 — ROI Extraction
+# The next step is saving the BEV slot coordinates to slots.json and
+# building full + eroded core masks for each slot.

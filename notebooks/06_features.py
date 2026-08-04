@@ -348,17 +348,17 @@ print(f"Saved feature vectors: data/ground_truth/feature_vectors.csv ({len(df)} 
 # ## Phase Summary
 #
 # ### What we accomplished
-# 1. ✅ Extracted all 8 features across ~30 frames × 100 slots
-# 2. ✅ Visualized per-feature histograms (occupied vs vacant)
-# 3. ✅ Computed Fisher discriminant ratios → feature ranking
-# 4. ✅ Demonstrated Canny edge density as the star feature
-# 5. ✅ Verified feature stability across weather conditions
-# 6. ✅ Saved feature vectors for threshold tuning
+# 1. Extracted all 8 features across ~30 frames × 100 slots
+# 2. Visualized per-feature histograms (occupied vs vacant)
+# 3. Computed Fisher discriminant ratios and feature ranking
+# 4. Demonstrated Canny edge density as the top-ranked feature
+# 5. Verified feature stability across weather conditions
+# 6. Saved feature vectors for threshold tuning
 #
 # ### Key results
 # - **Edge density** is the most discriminative feature (highest Fisher J)
 # - **Gradient magnitude** and **local variance** are strong secondary features
 # - Features are reasonably stable across sunny/cloudy/rainy conditions
-# - There is visible separation in the histograms → thresholding will work!
+# - There is visible separation in the histograms, supporting a threshold-based approach
 #
-# ### Next: Notebook 07 — Threshold Tuning & Evaluation
+# ### Notebook 07 — Threshold Tuning & Evaluation

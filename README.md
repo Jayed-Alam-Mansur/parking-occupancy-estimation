@@ -1,4 +1,4 @@
-# 🅿️ Automatic Parking Occupancy Estimation using Classical Image Processing
+# Automatic Parking Occupancy Estimation using Classical Image Processing
 
 > A complete, end-to-end parking-lot occupancy estimation system built **entirely from classical computer-vision techniques** — homography, CLAHE, Otsu/adaptive thresholding, morphology, Canny/Sobel features and a transparent rule-based decision cascade. **No machine learning, no deep learning, no pretrained models.**
 
@@ -31,7 +31,7 @@
 
 ---
 
-## 🖼️ The System at a Glance
+## The System at a Glance
 
 A **real, generated output** — the final annotated bird's-eye view for a sunny frame. Green = predicted **VACANT**, red = predicted **OCCUPIED**, and the banner shows live lot statistics. No stock art, no mockup: this is what the pipeline actually produces.
 
@@ -41,7 +41,7 @@ A **real, generated output** — the final annotated bird's-eye view for a sunny
 
 ---
 
-## 📖 Project Description
+## Project Description
 
 ### The problem being solved
 
@@ -90,65 +90,65 @@ Every parameter in this project was chosen by a human who can explain it, and th
 
 The system is **real-time capable on a laptop CPU**: measured **77.33 ms per frame (12.9 FPS)** for a full 100-slot lot, with no GPU. A single mid-range machine could serve several camera feeds at a practical update rate for a live "spaces available" sign, a mobile app, or a municipal open-data feed.
 
-### 🔎 Honest scope statement
+### Honest scope statement
 
-This README documents **what the code actually does and what it actually measured** — not what it aspires to. The system reaches **74.30 % accuracy / 0.7310 F1** on 11,599 held-out slot samples. That is a working demonstration of the classical pipeline, **not** a production-grade detector, and a well-known result in this project is that a **single-feature edge-density baseline actually outperforms the full 8-feature cascade** on the large evaluation set. That finding, its numbers, and its likely cause are all documented in [Results](#-results) and [Challenges Faced](#-challenges-faced) rather than hidden.
+This README documents **what the code actually does and what it actually measured** — not what it aspires to. The system reaches **74.30 % accuracy / 0.7310 F1** on 11,599 held-out slot samples. That is a working demonstration of the classical pipeline, **not** a production-grade detector, and a well-known result in this project is that a **single-feature edge-density baseline actually outperforms the full 8-feature cascade** on the large evaluation set. That finding, its numbers, and its likely cause are all documented in [Results](#results) and [Challenges Faced](#challenges-faced) rather than hidden.
 
 ---
 
-## ✨ Features
+## Features
 
 Everything listed below is **implemented and executed** in this repository.
 
 ### Core pipeline
 
-- ✅ **PKLot XML annotation parser** — extracts slot ID, occupancy flag and 4-corner polygon from `<space>`/`<contour>` elements
-- ✅ **Frame quality gate** — rejects frames on mean brightness (< 30) or Laplacian-variance blur score (< 50)
-- ✅ **Perspective transformation via homography** — 3×3 `H` from 4 point correspondences (exact DLT)
-- ✅ **Bird's-eye-view (BEV) warping** — `cv2.warpPerspective` with bilinear inverse mapping
-- ✅ **Polygon coordinate transformation** — slot polygons pushed through `H` once, then reused (no manual re-annotation)
-- ✅ **ROI extraction** — bounding-box crop + filled-polygon mask per slot
-- ✅ **Eroded "core" masks** — shrinks each polygon inwards to exclude painted lane lines and adjacent-vehicle overhang
-- ✅ **4-stage preprocessing ladder** — Grayscale → Gaussian blur → Median filter → CLAHE
-- ✅ **Three thresholding methods** — Global (fixed T), Adaptive (Gaussian-weighted local), Otsu (automatic)
-- ✅ **Otsu separability (η)** — between-class variance ratio computed as a free bonus feature
-- ✅ **Multi-channel segmentation fusion** — weighted soft-vote combiner over Otsu + Adaptive channels
-- ✅ **HSV shadow suppression** — low-V/low-S shadow mask (implemented and demonstrated)
-- ✅ **Full morphological toolkit** — erosion, dilation, opening, closing, and a 4-step cleanup pipeline
-- ✅ **8-feature extraction** — edge density, foreground ratio, gradient magnitude, local variance, largest connected component, intensity std, Otsu separability, mean saturation
-- ✅ **Fisher discriminant analysis** — ranks all 8 features by class-separating power
-- ✅ **Rule-based cascade classifier** — fast-path on extreme edge density, then Fisher-weighted score vs. threshold
-- ✅ **Occupancy statistics** — total / occupied / vacant / occupancy %, with per-row breakdown
-- ✅ **Annotated visualisation** — semi-transparent colour overlays, slot IDs, per-slot scores, statistics banner
+- **PKLot XML annotation parser** — extracts slot ID, occupancy flag and 4-corner polygon from `<space>`/`<contour>` elements
+- **Frame quality gate** — rejects frames on mean brightness (< 30) or Laplacian-variance blur score (< 50)
+- **Perspective transformation via homography** — 3×3 `H` from 4 point correspondences (exact DLT)
+- **Bird's-eye-view (BEV) warping** — `cv2.warpPerspective` with bilinear inverse mapping
+- **Polygon coordinate transformation** — slot polygons pushed through `H` once, then reused (no manual re-annotation)
+- **ROI extraction** — bounding-box crop + filled-polygon mask per slot
+- **Eroded "core" masks** — shrinks each polygon inwards to exclude painted lane lines and adjacent-vehicle overhang
+- **4-stage preprocessing ladder** — Grayscale → Gaussian blur → Median filter → CLAHE
+- **Three thresholding methods** — Global (fixed T), Adaptive (Gaussian-weighted local), Otsu (automatic)
+- **Otsu separability (η)** — between-class variance ratio computed as a free bonus feature
+- **Multi-channel segmentation fusion** — weighted soft-vote combiner over Otsu + Adaptive channels
+- **HSV shadow suppression** — low-V/low-S shadow mask (implemented and demonstrated)
+- **Full morphological toolkit** — erosion, dilation, opening, closing, and a 4-step cleanup pipeline
+- **8-feature extraction** — edge density, foreground ratio, gradient magnitude, local variance, largest connected component, intensity std, Otsu separability, mean saturation
+- **Fisher discriminant analysis** — ranks all 8 features by class-separating power
+- **Rule-based cascade classifier** — fast-path on extreme edge density, then Fisher-weighted score vs. threshold
+- **Occupancy statistics** — total / occupied / vacant / occupancy %, with per-row breakdown
+- **Annotated visualisation** — semi-transparent colour overlays, slot IDs, per-slot scores, statistics banner
 
 ### Analysis & evaluation
 
-- ✅ **Exploratory data analysis** — sample grids, grayscale + per-channel RGB histograms, slot-area distributions
-- ✅ **Threshold sweeping** — 100-point sweeps over both single-feature and weighted-score thresholds
-- ✅ **Data-driven fast-path calibration** — percentile-based τ_low / τ_high derived from class distributions
-- ✅ **Metrics from scratch** — confusion matrix, accuracy, precision, recall, F1 (no `sklearn`)
-- ✅ **Per-weather evaluation** — separate confusion matrices and metrics for sunny / cloudy / rainy
-- ✅ **Single-feature vs. multi-feature comparison** — head-to-head benchmark
-- ✅ **Per-slot error analysis** — identifies the 10 most consistently misclassified bays
-- ✅ **Per-stage timing benchmark** — 8-stage breakdown with FPS calculation
-- ✅ **Reproducible artifacts** — tuned `H`, slot layout and thresholds persisted to `config/`
-- ✅ **Paired notebooks** — every notebook exists as both `.ipynb` (with outputs) and a jupytext `.py` script
+- **Exploratory data analysis** — sample grids, grayscale + per-channel RGB histograms, slot-area distributions
+- **Threshold sweeping** — 100-point sweeps over both single-feature and weighted-score thresholds
+- **Data-driven fast-path calibration** — percentile-based τ_low / τ_high derived from class distributions
+- **Metrics from scratch** — confusion matrix, accuracy, precision, recall, F1 (no `sklearn`)
+- **Per-weather evaluation** — separate confusion matrices and metrics for sunny / cloudy / rainy
+- **Single-feature vs. multi-feature comparison** — head-to-head benchmark
+- **Per-slot error analysis** — identifies the 10 most consistently misclassified bays
+- **Per-stage timing benchmark** — 8-stage breakdown with FPS calculation
+- **Reproducible artifacts** — tuned `H`, slot layout and thresholds persisted to `config/`
+- **Paired notebooks** — every notebook exists as both `.ipynb` (with outputs) and a jupytext `.py` script
 
 ### Implemented but not wired into the executed pipeline
 
 These functions are written, documented and importable, but **are not called** by the current end-to-end run. Listed here so the feature list stays honest:
 
-- ⚪ `apply_hysteresis()` — temporal state smoothing over consecutive frames (`src/decide.py`)
-- ⚪ `neighbour_refinement()` — spatial consistency check against neighbouring slots (`src/decide.py`)
-- ⚪ `reference_difference()` — empty-lot background subtraction (`src/segmentation.py`)
-- ⚪ `shadow_suppress_hsv()` — demonstrated in Notebook 05, but **not** called inside `ParkingPipeline.process_frame()`
-- ⚪ `undistort_image()` — lens distortion removal (`src/geometry.py`)
-- ⚪ `create_dashboard()`, `create_occupancy_map()`, `create_pipeline_figure()` — visualisation helpers (`src/visualize.py`)
-- ⚪ `ParkingPipeline` class — the orchestrator in `src/pipeline.py` is complete but no notebook instantiates it; the notebooks inline the same stage sequence
+- `apply_hysteresis()` — temporal state smoothing over consecutive frames (`src/decide.py`)
+- `neighbour_refinement()` — spatial consistency check against neighbouring slots (`src/decide.py`)
+- `reference_difference()` — empty-lot background subtraction (`src/segmentation.py`)
+- `shadow_suppress_hsv()` — demonstrated in Notebook 05, but **not** called inside `ParkingPipeline.process_frame()`
+- `undistort_image()` — lens distortion removal (`src/geometry.py`)
+- `create_dashboard()`, `create_occupancy_map()`, `create_pipeline_figure()` — visualisation helpers (`src/visualize.py`)
+- `ParkingPipeline` class — the orchestrator in `src/pipeline.py` is complete but no notebook instantiates it; the notebooks inline the same stage sequence
 
 ---
 
-## 🎬 Project Demo
+## Project Demo
 
 All images below are **real generated outputs** committed in `outputs/`. Nothing here is a mock-up.
 
@@ -204,11 +204,11 @@ All images below are **real generated outputs** committed in `outputs/`. Nothing
 
 *Source: `outputs/screenshots/19_results_gallery.png` — one annotated frame per weather condition with per-frame accuracy and F1 in the title.*
 
-> **📌 Not available:** there is no animated GIF, no video demo, and no live web dashboard in this repository. `outputs/dashboard/`, `outputs/figures/`, `outputs/pipeline/`, `outputs/evaluation/` and `outputs/reports/` are **empty directories**.
+> **Note:** there is no animated GIF, no video demo, and no live web dashboard in this repository. `outputs/dashboard/`, `outputs/figures/`, `outputs/pipeline/`, `outputs/evaluation/` and `outputs/reports/` are **empty directories**.
 
 ---
 
-## 🚀 Start Here — Three Ways to Read This Project
+## Start Here — Three Ways to Read This Project
 
 Development happened across nine sequential notebooks. For reading, presenting or grading, **use the combined build instead** — the same work assembled into one continuous narrative with every executed output preserved.
 
@@ -221,7 +221,7 @@ Development happened across nine sequential notebooks. For reading, presenting o
 | **Play with it live** | [`app.py`](app.py) — `streamlit run app.py` | Interactive explorer. Move a slider, watch the pipeline recompute. See below. |
 | **Audit the original work** | [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb) → [`09_final_report.ipynb`](notebooks/09_final_report.ipynb) | The nine development notebooks, untouched. These remain the source of truth. |
 
-### 🎛️ The interactive explorer
+### The interactive explorer
 
 ```bash
 pip install -r requirements.txt
@@ -232,13 +232,13 @@ Runs entirely on the **21 curated frames committed to `data/samples/`** — the 
 
 | Tab | What it does |
 |---|---|
-| **🔬 Pipeline Explorer** | Original vs bird's-eye view side by side, then one bay walked through all nine stages — ROI → grayscale → CLAHE → Gaussian → median → Otsu → adaptive → fused → morphology — ending in its eight features, weighted contributions and verdict against ground truth. |
-| **🅿️ Whole Lot** | All 100 bays annotated green/red with live occupancy %, accuracy against ground truth, frame time, and a false-occupied / false-vacant split. |
-| **📤 Your Own Image** | Upload any parking-lot photo and run the identical pipeline on it. See below. |
-| **🎚️ The Twist (Act 8)** | The Act 8 finding, live: sweep a single `edge_density` cutoff and watch the one-number baseline beat the full eight-feature cascade. |
-| **📖 The Story** | The nine-act narrative and headline results, for reference while demoing. |
+| **Pipeline Explorer** | Original vs bird's-eye view side by side, then one bay walked through all nine stages — ROI → grayscale → CLAHE → Gaussian → median → Otsu → adaptive → fused → morphology — ending in its eight features, weighted contributions and verdict against ground truth. |
+| **Whole Lot** | All 100 bays annotated green/red with live occupancy %, accuracy against ground truth, frame time, and a false-occupied / false-vacant split. |
+| **Your Own Image** | Upload any parking-lot photo and run the identical pipeline on it. See below. |
+| **The Twist (Act 8)** | The Act 8 finding, live: sweep a single `edge_density` cutoff and watch the one-number baseline beat the full eight-feature cascade. |
+| **The Story** | The nine-act narrative and headline results, for reference while demoing. |
 
-#### 📤 Running it on a new image
+#### Running it on a new image
 
 The **Your Own Image** tab takes an upload and pushes it through the same stages. Two things must be true before any number means anything, and the tab makes both explicit rather than assuming them:
 
@@ -265,9 +265,9 @@ Also reused here: **Act 1's quality gate**, reporting brightness and Laplacian-v
 
 Fourteen sliders in the sidebar expose every parameter the pipeline uses — CLAHE clip limit, kernel sizes, adaptive block size, Canny bounds, morphology kernels, core-mask erosion and all three decision thresholds. **They start at the exact tuned values in `config/`**, so the app reproduces the committed configuration until you deliberately break it.
 
-> 💡 **Why this is worth demoing.** Drop the core-mask erosion to zero and watch neighbouring cars leak across shared painted lines — accuracy falls **7.05 points** and mean edge density *rises*, because it is now measuring the neighbour's car. Push the morphological opening kernel from 3 to 7 and watch it eat the cars themselves (**−10.01 points**). The failure modes argued for in the write-up become something you can *show* rather than assert. Measured numbers and a demo run-sheet are in [`STREAMLIT_DEMO_SCRIPT.md`](docs/presentation/STREAMLIT_DEMO_SCRIPT.md).
+> **Why this is worth demoing.** Drop the core-mask erosion to zero and watch neighbouring cars leak across shared painted lines — accuracy falls **7.05 points** and mean edge density *rises*, because it is now measuring the neighbour's car. Push the morphological opening kernel from 3 to 7 and watch it eat the cars themselves (**−10.01 points**). The failure modes argued for in the write-up become something you can *show* rather than assert. Measured numbers and a demo run-sheet are in [`STREAMLIT_DEMO_SCRIPT.md`](docs/presentation/STREAMLIT_DEMO_SCRIPT.md).
 
-### ☁️ Deploying to Streamlit Community Cloud (free)
+### Deploying to Streamlit Community Cloud (free)
 
 The repository is deploy-ready — no dataset upload, no secrets, no build config.
 
@@ -292,7 +292,7 @@ The repository is deploy-ready — no dataset upload, no secrets, no build confi
 - **Comfortably inside the 1 GB memory limit.** A full 100-bay pass allocates small per-slot crops and takes ~75 ms; results are cached per parameter combination.
 - **Theme committed.** `.streamlit/config.toml` sets the dark theme and disables usage-stat collection, so the deployed app looks identical to local.
 
-> ⚠️ **Free-tier apps sleep after ~7 days of inactivity** and take a few seconds to wake. If you are presenting from the deployed URL, **open it a few minutes beforehand** so it is warm — or just run it locally, which has no cold start.
+> **Free-tier apps sleep after ~7 days of inactivity** and take a few seconds to wake. If you are presenting from the deployed URL, **open it a few minutes beforehand** so it is warm — or just run it locally, which has no cold start.
 
 ### The nine acts
 
@@ -308,40 +308,40 @@ The repository is deploy-ready — no dataset upload, no secrets, no build confi
 | **8** | **The Verdict, and the Twist** | Does it work on 11,599 samples — and what went wrong? |
 | **9** | What It Means, and What I'd Do Next | Honest limitations and next steps |
 
-> 🔬 **How the combined notebook was built.** [`notebooks/build_combined_notebook.py`](notebooks/build_combined_notebook.py) merges the nine sources: it collapses nine duplicated import blocks into one setup cell, renumbers sections into a single arc, strips the `Next: Notebook NN` forward-pointers, re-attaches Act 4's four figures (which the `Agg` backend had written to disk instead of displaying inline), and recompresses photographic PNG outputs to JPEG — **27.15 MB → 6.04 MB**. The only outputs lost were docstring echoes and `Configuration loaded successfully!` chatter. Re-run it any time to regenerate.
+> **How the combined notebook was built.** [`notebooks/build_combined_notebook.py`](notebooks/build_combined_notebook.py) merges the nine sources: it collapses nine duplicated import blocks into one setup cell, renumbers sections into a single arc, strips the `Next: Notebook NN` forward-pointers, re-attaches Act 4's four figures (which the `Agg` backend had written to disk instead of displaying inline), and recompresses photographic PNG outputs to JPEG — **27.15 MB → 6.04 MB**. The only outputs lost were docstring echoes and `Configuration loaded successfully!` chatter. Re-run it any time to regenerate.
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
-- [🚀 Start Here — Three Ways to Read This Project](#-start-here--three-ways-to-read-this-project)
-- [🖼️ The System at a Glance](#️-the-system-at-a-glance)
-- [📖 Project Description](#-project-description)
-- [✨ Features](#-features)
-- [🎬 Project Demo](#-project-demo)
-- [🏗️ Project Architecture](#️-project-architecture)
-- [📂 Folder Structure](#-folder-structure)
-- [⚙️ Installation](#️-installation)
-- [📦 Requirements](#-requirements)
-- [🗂️ Dataset](#️-dataset)
-- [🔄 Project Workflow](#-project-workflow)
-- [🖥️ Image Processing Pipeline](#️-image-processing-pipeline)
-- [🧮 Algorithms Used](#-algorithms-used)
-- [📓 Notebook Walkthrough](#-notebook-walkthrough)
-- [🖼️ Output Gallery](#️-output-gallery)
-- [📊 Results](#-results)
-- [🌟 Project Highlights](#-project-highlights)
-- [🧗 Challenges Faced](#-challenges-faced)
-- [🚀 Future Improvements](#-future-improvements)
-- [🏢 Applications](#-applications)
-- [🎓 Learning Outcomes](#-learning-outcomes)
-- [📄 License](#-license)
-- [🙏 Acknowledgements](#-acknowledgements)
-- [👤 Author](#-author)
+- [Start Here — Three Ways to Read This Project](#start-here--three-ways-to-read-this-project)
+- [The System at a Glance](#the-system-at-a-glance)
+- [Project Description](#project-description)
+- [Features](#features)
+- [Project Demo](#project-demo)
+- [Project Architecture](#project-architecture)
+- [Folder Structure](#folder-structure)
+- [Installation](#installation)
+- [Requirements](#requirements)
+- [Dataset](#dataset)
+- [Project Workflow](#project-workflow)
+- [Image Processing Pipeline](#image-processing-pipeline)
+- [Algorithms Used](#algorithms-used)
+- [Notebook Walkthrough](#notebook-walkthrough)
+- [Output Gallery](#output-gallery)
+- [Results](#results)
+- [Project Highlights](#project-highlights)
+- [Challenges Faced](#challenges-faced)
+- [Future Improvements](#future-improvements)
+- [Applications](#applications)
+- [Learning Outcomes](#learning-outcomes)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+- [Author](#author)
 
 ---
 
-## 🏗️ Project Architecture
+## Project Architecture
 
 ### Design philosophy
 
@@ -510,7 +510,7 @@ Occupancy Decision → Statistics → Visualization
 ```
 
 ---
-## 📂 Folder Structure
+## Folder Structure
 
 ### Complete project tree
 
@@ -520,7 +520,7 @@ parking-occupancy-estimation/
 ├── README.md                          # This document
 ├── requirements.txt                   # Pinned dependencies + prohibition list
 │
-├── config/                            # 🔧 Calibration artifacts (the "trained" state)
+├── config/                            # Calibration artifacts (the "trained" state)
 │   ├── config.yaml                    # Master parameter file (paths, kernels, colours)
 │   ├── homography.npz                 # H matrix, output_size, px_per_metre, src/dst points
 │   ├── slots.json                     # 100 slot polygons in BEV coordinates
@@ -546,11 +546,11 @@ parking-occupancy-estimation/
 │   │   ├── labels.csv                 # 42,318 rows — every slot of 448 frames + corner coords
 │   │   └── feature_vectors.csv        # 2,802 rows — 8 features + weather + label per slot
 │   │
-│   ├── annotations/                   # ⚠️ EMPTY (declared in config.yaml, never written to)
-│   └── processed/                     # ⚠️ EMPTY (declared in config.yaml, never written to)
+│   ├── annotations/                   # Empty (declared in config.yaml, never written to)
+│   └── processed/                     # Empty (declared in config.yaml, never written to)
 │
-├── notebooks/                         # 📓 9 notebooks, each paired .ipynb + .py (jupytext)
-│   ├── 00_COMPLETE_PROJECT.ipynb      # ⭐ ALL 9 MERGED — 9 acts, all outputs. Read/present this
+├── notebooks/                         # 9 notebooks, each paired .ipynb + .py (jupytext)
+│   ├── 00_COMPLETE_PROJECT.ipynb      # ALL 9 MERGED — 9 acts, all outputs. Read/present this
 │   ├── build_combined_notebook.py     # Reproducible merge script that generates 00_
 │   │
 │   ├── 01_explore.ipynb / .py         # Dataset exploration & EDA
@@ -568,7 +568,7 @@ parking-occupancy-estimation/
 │   ├── outputs-> ../outputs           # symlink
 │   └── src    -> ../src               # symlink
 │
-├── src/                               # 🐍 Source library — 14 modules
+├── src/                               # Source library — 14 modules
 │   ├── __init__.py                    # Package docstring, __version__ = "1.0.0"
 │   ├── io_utils.py         (311 L)    # PKLot XML parsing, frame listing, quality gate, GT export
 │   ├── geometry.py         (308 L)    # Homography computation, warping, point transformation
@@ -585,17 +585,17 @@ parking-occupancy-estimation/
 │   └── utils.py            (171 L)    # Config loading, image I/O, display grid, separators
 │
 ├── outputs/
-│   ├── screenshots/                   # ✅ 29 generated figures (37 MB) — see Output Gallery
-│   ├── annotated/                     # ✅ 3 final annotated results (sunny/cloudy/rainy)
-│   ├── pipeline/                      # ⚠️ EMPTY (declared in config.yaml)
-│   ├── dashboard/                     # ⚠️ EMPTY (declared in config.yaml)
-│   ├── figures/                       # ⚠️ EMPTY
-│   ├── evaluation/                    # ⚠️ EMPTY (declared in config.yaml)
-│   └── reports/                       # ⚠️ EMPTY
+│   ├── screenshots/                   # 29 generated figures (37 MB) — see Output Gallery
+│   ├── annotated/                     # 3 final annotated results (sunny/cloudy/rainy)
+│   ├── pipeline/                      # Empty (declared in config.yaml)
+│   ├── dashboard/                     # Empty (declared in config.yaml)
+│   ├── figures/                       # Empty
+│   ├── evaluation/                    # Empty (declared in config.yaml)
+│   └── reports/                       # Empty
 │
 ├── docs/
-│   ├── diagrams/                      # ⚠️ EMPTY
-│   └── presentation/                  # 🎤 Presentation material
+│   ├── diagrams/                      # Empty
+│   └── presentation/                  # Presentation material
 │       ├── parking-occupancy-presentation.html   # Standalone build of 00_ (7.6 MB, no Jupyter needed)
 │       └── PRESENTATION_SCRIPT.md                # Act-by-act speaker script + Q&A + timing card
 │
@@ -606,20 +606,20 @@ parking-occupancy-estimation/
 
 | Folder | Purpose | Status |
 |--------|---------|--------|
-| `config/` | The four artifacts that make inference reproducible without the dataset. Produced by Notebooks 02, 03 and 07. | ✅ Populated |
-| `data/raw/` | Unmodified PKLot dataset — archive plus extracted tree. 7.5 GB combined. | ✅ Populated |
-| `data/samples/` | 21 representative frames copied out by `curate_samples()` for fast iteration without touching the full dataset. | ✅ Populated |
-| `data/ground_truth/` | Two CSVs: parsed XML labels, and the extracted feature matrix used for threshold tuning. | ✅ Populated |
-| `data/annotations/` | Declared in `config.yaml` as `paths.annotations`. No code writes here. | ⚠️ Empty |
-| `data/processed/` | Declared in `config.yaml` as `paths.data_processed`. No code writes here. | ⚠️ Empty |
-| `notebooks/` | The narrative: 9 sequential notebooks that build, calibrate and evaluate the system, plus `00_COMPLETE_PROJECT.ipynb` merging all nine into one story. Symlinks let them run from either the project root or the notebooks directory. | ✅ Populated |
-| `src/` | The reusable library. Every notebook imports from here; no algorithm is defined inside a notebook. | ✅ Populated |
-| `outputs/screenshots/` | Every figure produced by the notebooks, auto-saved by `visualize.show_and_save_fig()`. | ✅ 29 files |
-| `outputs/annotated/` | Final colour-coded results written by Notebook 08. | ✅ 3 files |
-| `outputs/pipeline`, `dashboard`, `figures`, `evaluation`, `reports` | Reserved output directories. `config.yaml` names four of them, but no executed code writes to any. | ⚠️ Empty |
-| `docs/presentation/` | Standalone HTML build of the combined notebook, plus the speaker script. | ✅ 2 files |
-| `docs/diagrams/` | Reserved for architecture diagrams. The architecture is documented as ASCII in this README instead. | ⚠️ Empty |
-| `venv/` | Local virtual environment. Should be excluded from version control. | ✅ Present |
+| `config/` | The four artifacts that make inference reproducible without the dataset. Produced by Notebooks 02, 03 and 07. | Populated |
+| `data/raw/` | Unmodified PKLot dataset — archive plus extracted tree. 7.5 GB combined. | Populated |
+| `data/samples/` | 21 representative frames copied out by `curate_samples()` for fast iteration without touching the full dataset. | Populated |
+| `data/ground_truth/` | Two CSVs: parsed XML labels, and the extracted feature matrix used for threshold tuning. | Populated |
+| `data/annotations/` | Declared in `config.yaml` as `paths.annotations`. No code writes here. | Empty |
+| `data/processed/` | Declared in `config.yaml` as `paths.data_processed`. No code writes here. | Empty |
+| `notebooks/` | The narrative: 9 sequential notebooks that build, calibrate and evaluate the system, plus `00_COMPLETE_PROJECT.ipynb` merging all nine into one story. Symlinks let them run from either the project root or the notebooks directory. | Populated |
+| `src/` | The reusable library. Every notebook imports from here; no algorithm is defined inside a notebook. | Populated |
+| `outputs/screenshots/` | Every figure produced by the notebooks, auto-saved by `visualize.show_and_save_fig()`. | 29 files |
+| `outputs/annotated/` | Final colour-coded results written by Notebook 08. | 3 files |
+| `outputs/pipeline`, `dashboard`, `figures`, `evaluation`, `reports` | Reserved output directories. `config.yaml` names four of them, but no executed code writes to any. | Empty |
+| `docs/presentation/` | Standalone HTML build of the combined notebook, plus the speaker script. | 2 files |
+| `docs/diagrams/` | Reserved for architecture diagrams. The architecture is documented as ASCII in this README instead. | Empty |
+| `venv/` | Local virtual environment. Should be excluded from version control. | Present |
 
 ### Important files explained
 
@@ -635,8 +635,8 @@ Central place for tunable parameters, grouped into seven sections:
 | `segmentation` | `global_threshold: 127`, `adaptive_block_size: 11`, `adaptive_constant: 2` | Values match what the notebooks pass |
 | `morphology` | `kernel_size: [3,3]`, `erosion_iterations: 1`, `dilation_iterations: 1` | Matches module defaults |
 | `features` | `canny_low: 50`, `canny_high: 150` | Matches `extract_all_features()` defaults |
-| `decision` | `edge_density_threshold: 0.1`, `foreground_ratio_threshold: 0.25`, `pixel_variance_threshold: 500`, `min_features_above_threshold: 2` | ⚠️ **Not used.** This is an earlier "vote-counting" decision design. The shipped classifier reads `thresholds.yaml` instead. |
-| `perspective` | `output_size: [600, 800]` | ⚠️ **Not used.** Notebook 02 hard-codes `BEV_WIDTH=800`, `BEV_HEIGHT=1000`, and that is what is stored in `homography.npz`. |
+| `decision` | `edge_density_threshold: 0.1`, `foreground_ratio_threshold: 0.25`, `pixel_variance_threshold: 500`, `min_features_above_threshold: 2` | **Not used.** This is an earlier "vote-counting" decision design. The shipped classifier reads `thresholds.yaml` instead. |
+| `perspective` | `output_size: [600, 800]` | **Not used.** Notebook 02 hard-codes `BEV_WIDTH=800`, `BEV_HEIGHT=1000`, and that is what is stored in `homography.npz`. |
 | `visualization` | BGR colours, `overlay_alpha: 0.35`, font settings | Values match the hard-coded defaults in `visualize.py` |
 
 </details>
@@ -671,7 +671,7 @@ x' = 0.6066·x + 38.16          (horizontal scale ×0.61)
 y' = 2.1634·y − 305.87         (vertical scale ×2.16)
 ```
 
-That is an **anisotropic scale plus translation**, not a projective rectification. The reason is documented in [Challenges Faced](#-challenges-faced): the source points were derived from the axis-aligned bounding box of all slot polygons, so the source quadrilateral is already a rectangle, and mapping a rectangle to a rectangle can only ever produce an affine scale.
+That is an **anisotropic scale plus translation**, not a projective rectification. The reason is documented in [Challenges Faced](#challenges-faced): the source points were derived from the axis-aligned bounding box of all slot polygons, so the source quadrilateral is already a rectangle, and mapping a rectangle to a rectangle can only ever produce an affine scale.
 
 </details>
 
@@ -737,7 +737,7 @@ jupytext --to notebook notebooks/01_explore.py
 
 ---
 
-## ⚙️ Installation
+## Installation
 
 ### Prerequisites
 
@@ -828,7 +828,7 @@ data/raw/PKLot/
 └── parking2/{sunny,cloudy,rainy}/YYYY-MM-DD/*.jpg + *.xml
 ```
 
-> **⚠️ Folder-naming note.** The code expects **lowercase** lot and weather directory names — `parking2/sunny/`, not `UFPR05/Sunny/`. `io_utils.list_frames()` searches for the literal directories `sunny`, `cloudy`, `rainy`, and the notebooks reference `parking1a`, `parking1b`, `parking2`. If your extracted archive uses the original PKLot naming (`PUCPR`, `UFPR04`, `UFPR05` with `Sunny`/`Cloudy`/`Rainy`), rename the directories to lowercase or adjust the constants at the top of each notebook.
+> **Folder-naming note.** The code expects **lowercase** lot and weather directory names — `parking2/sunny/`, not `UFPR05/Sunny/`. `io_utils.list_frames()` searches for the literal directories `sunny`, `cloudy`, `rainy`, and the notebooks reference `parking1a`, `parking1b`, `parking2`. If your extracted archive uses the original PKLot naming (`PUCPR`, `UFPR04`, `UFPR05` with `Sunny`/`Cloudy`/`Rainy`), rename the directories to lowercase or adjust the constants at the top of each notebook.
 
 Verify the dataset is visible to the code:
 
@@ -902,7 +902,7 @@ cv2.imwrite('my_output.png', result['annotated'])
 | `bev` | `np.ndarray` | 800×1000 BGR bird's-eye view |
 | `timing` | `dict` | mean milliseconds per stage |
 
-> **📌 Note.** No notebook currently instantiates `ParkingPipeline`; the notebooks inline the same stage sequence directly. The class is complete and importable, but its end-to-end behaviour is not covered by the executed notebook outputs. It also **omits** the HSV shadow-suppression step, matching the notebooks.
+> **Note.** No notebook currently instantiates `ParkingPipeline`; the notebooks inline the same stage sequence directly. The class is complete and importable, but its end-to-end behaviour is not covered by the executed notebook outputs. It also **omits** the HSV shadow-suppression step, matching the notebooks.
 
 ### Step 8 — Recommended repository hygiene
 
@@ -923,7 +923,7 @@ Without this, a `git add .` would attempt to commit **8.2 GB** of virtual enviro
 
 ---
 
-## 📦 Requirements
+## Requirements
 
 ### Declared dependencies
 
@@ -933,12 +933,12 @@ Dependencies are split in two, because **Streamlit Community Cloud installs `req
 
 | Package | Pinned version | Purpose | Actually imported? |
 |---------|---------------|---------|--------------------|
-| `opencv-python-headless` | **4.10.0.84** | Core computer vision — every transform, filter, threshold, morphology and feature operation | ✅ Yes — `src/` (11 modules), all notebooks, `app.py` |
-| `numpy` | **1.26.4** | Array operations, linear algebra, statistics | ✅ Yes — everywhere |
-| `matplotlib` | **3.9.2** | All plotting and figure generation | ✅ Yes — `visualize.py`, `evaluate.py`, `utils.py`, all notebooks |
-| `pandas` | **2.2.2** | CSV export/import, feature tables, summary statistics | ✅ Yes — `io_utils.py`, `app.py`, notebooks 01, 02, 06–09 |
-| `PyYAML` | **6.0.2** | Reads `config.yaml` and reads/writes `thresholds.yaml` | ✅ Yes — `utils.py`, `decide.py` |
-| `streamlit` | **1.60.0** | Interactive pipeline explorer | ✅ Yes — `app.py` |
+| `opencv-python-headless` | **4.10.0.84** | Core computer vision — every transform, filter, threshold, morphology and feature operation | Yes — `src/` (11 modules), all notebooks, `app.py` |
+| `numpy` | **1.26.4** | Array operations, linear algebra, statistics | Yes — everywhere |
+| `matplotlib` | **3.9.2** | All plotting and figure generation | Yes — `visualize.py`, `evaluate.py`, `utils.py`, all notebooks |
+| `pandas` | **2.2.2** | CSV export/import, feature tables, summary statistics | Yes — `io_utils.py`, `app.py`, notebooks 01, 02, 06–09 |
+| `PyYAML` | **6.0.2** | Reads `config.yaml` and reads/writes `thresholds.yaml` | Yes — `utils.py`, `decide.py` |
+| `streamlit` | **1.60.0** | Interactive pipeline explorer | Yes — `app.py` |
 
 > **Why `-headless`?** It is the same OpenCV build minus the GUI functions (`imshow`, `namedWindow`, `waitKey`) — **none of which this project calls anywhere**, verified by grep. The regular `opencv-python` wheel links against `libGL.so.1`, which is absent from Streamlit Cloud containers and fails at import. The headless wheel is a drop-in and works identically locally.
 
@@ -946,10 +946,10 @@ Dependencies are split in two, because **Streamlit Community Cloud installs `req
 
 | Package | Pinned version | Purpose | Actually imported? |
 |---------|---------------|---------|--------------------|
-| `jupyter` | **1.1.1** | Notebook environment | ✅ Yes — runtime |
-| `ipykernel` | **6.29.5** | Jupyter kernel backend | ✅ Yes — runtime |
-| `seaborn` | **0.13.2** | Confusion-matrix heat-map rendering | ✅ Yes — `evaluate.py` only, which `app.py` does not import |
-| `tqdm` | **4.66.5** | Listed for progress bars | ⚠️ **Never imported.** Notebooks print progress with plain `print()` every 5–20 frames. |
+| `jupyter` | **1.1.1** | Notebook environment | Yes — runtime |
+| `ipykernel` | **6.29.5** | Jupyter kernel backend | Yes — runtime |
+| `seaborn` | **0.13.2** | Confusion-matrix heat-map rendering | Yes — `evaluate.py` only, which `app.py` does not import |
+| `tqdm` | **4.66.5** | Listed for progress bars | **Never imported.** Notebooks print progress with plain `print()` every 5–20 frames. |
 
 `scikit-image==0.24.0` was declared in the original requirements and **never imported anywhere** — no `import skimage` exists in `src/` or `notebooks/`. It has been dropped rather than carried into a deployment that would spend build minutes compiling it. `tqdm` is likewise unused but retained in the dev file as a harmless, tiny pure-Python install.
 
@@ -966,9 +966,9 @@ Dependencies are split in two, because **Streamlit Community Cloud installs `req
 ### Explicitly prohibited (enforced by project constraints)
 
 ```
-❌ tensorflow      ❌ torch / pytorch     ❌ keras
-❌ ultralytics     ❌ detectron2          ❌ any pretrained model package
-❌ sklearn classifiers
+tensorflow      torch / pytorch     keras
+ultralytics     detectron2          any pretrained model package
+sklearn classifiers
 ```
 
 Verify compliance at any time:
@@ -985,7 +985,7 @@ grep -rniE "tensorflow|torch|keras|ultralytics|detectron|sklearn" src/ notebooks
 - **Determinism:** given identical inputs and config files, every run produces byte-identical outputs.
 
 ---
-## 🗂️ Dataset
+## Dataset
 
 ### Name and source
 
@@ -997,7 +997,7 @@ grep -rniE "tensorflow|torch|keras|ultralytics|detectron|sklearn" src/ notebooks
 | **Reference paper** | Almeida, P., Oliveira, L.S., Britto, A.S., Silva, E.J., Koerich, A.L. — *"PKLot – A Robust Dataset for Parking Lot Classification"*, Expert Systems with Applications, 42(11), 2015 |
 | **Archive in this repo** | `data/raw/PKLot.tar.gz` — 3.6 GB |
 | **Extracted size** | `data/raw/PKLot/` — 3.9 GB |
-| **Included in git?** | ❌ No — must be downloaded separately |
+| **Included in git?** | No — must be downloaded separately |
 
 ### Why this dataset was selected
 
@@ -1043,7 +1043,7 @@ These counts were produced by running Notebook 01 against the local copy:
 |-----|-------------:|------:|-------:|------:|
 | `parking1a` | 3,791 | 2,098 (20 dates) | 1,408 (15 dates) | 285 (14 dates) |
 | `parking1b` | 4,152 | 2,500 (25 dates) | 1,426 (19 dates) | 226 (8 dates) |
-| **`parking2`** ⭐ | **4,473** | **2,314 (24 dates)** | **1,328 (11 dates)** | **831 (8 dates)** |
+| **`parking2`** | **4,473** | **2,314 (24 dates)** | **1,328 (11 dates)** | **831 (8 dates)** |
 | **Total** | **12,416** | 6,912 | 4,162 | 1,342 |
 
 **`parking2` was chosen as the primary lot** because it has the most frames overall *and* by far the best rainy-weather coverage (831 frames vs. 285 and 226), which matters for the per-weather robustness analysis.
@@ -1133,7 +1133,7 @@ Found 99 parking slots
 
 ---
 
-## 🔄 Project Workflow
+## Project Workflow
 
 This section walks through every phase in execution order. Each phase lists **purpose, input, processing, output, visualisation, why it is needed** and the **expected result**.
 
@@ -1191,7 +1191,7 @@ This section walks through every phase in execution order. Each phase lists **pu
 | **Why needed** | A night-time or motion-blurred frame produces garbage edge densities that would silently poison the evaluation |
 | **Expected result** | Daytime PKLot frames pass comfortably |
 
-**Measured on the first 5 frames:** brightness 117.7 – 132.5 (threshold 30), blur score 397.1 – 435.0 (threshold 50). All ✅ PASS with an ~8× margin on both criteria.
+**Measured on the first 5 frames:** brightness 117.7 – 132.5 (threshold 30), blur score 397.1 – 435.0 (threshold 50). All PASS with an ~8× margin on both criteria.
 
 ---
 
@@ -1234,7 +1234,7 @@ BEV output: 800 × 1000
 Estimated scale: 14.4 px/m  (from mean BEV slot area, assuming 2.5 m × 5.0 m bays)
 ```
 
-> **⚠️ Honest finding.** Because `src_points` are the corners of an **axis-aligned bounding box**, the source shape is already a rectangle. A rectangle-to-rectangle mapping can only produce an affine scale, so the resulting `H` is diagonal (see [config/homography.npz](#-folder-structure)) and the "BEV" is a **stretched crop rather than a true metric rectification**. The measured consequence is below.
+> **Honest finding.** Because `src_points` are the corners of an **axis-aligned bounding box**, the source shape is already a rectangle. A rectangle-to-rectangle mapping can only produce an affine scale, so the resulting `H` is diagonal (see [config/homography.npz](#folder-structure)) and the "BEV" is a **stretched crop rather than a true metric rectification**. The measured consequence is below.
 
 **BEV slot-area validation:**
 
@@ -1246,7 +1246,7 @@ Estimated scale: 14.4 px/m  (from mean BEV slot area, assuming 2.5 m × 5.0 m ba
 | Std | 581 px² | 760 px² |
 | **Max / Min ratio** | **2.9×** | **2.9×** |
 
-The area ratio **did not improve** — it is 2.9× before and 2.9× after. Everything was scaled by a constant factor, so relative area differences were preserved exactly. Notebook 02's summary prose claims a reduction from "~8×" to "~2×"; the executed output shows 2.9× → 2.9×. This is a genuine limitation of the current calibration and is analysed in [Challenges Faced](#-challenges-faced).
+The area ratio **did not improve** — it is 2.9× before and 2.9× after. Everything was scaled by a constant factor, so relative area differences were preserved exactly. Notebook 02's summary prose claims a reduction from "~8×" to "~2×"; the executed output shows 2.9× → 2.9×. This is a genuine limitation of the current calibration and is analysed in [Challenges Faced](#challenges-faced).
 
 ---
 
@@ -1286,7 +1286,7 @@ Notebook 03 derives the erosion from physical units: `erosion_px = max(2, int(0.
 | **Why needed** | Raw patches carry colour-temperature drift, JPEG artefacts and 40-level dynamic range in shadow — all fatal to thresholding |
 | **Expected result** | Visibly stretched local contrast with edges intact |
 
-> **📌 Documentation discrepancy.** The markdown table in Notebook 04 describes the order as *Grayscale → CLAHE → Gaussian → Median*. The actual code in `preprocessing.preprocess_pipeline()` runs **Grayscale → Gaussian → Median → CLAHE**. The **code order is what executes**, and it is the order documented throughout this README. The module docstring in `src/preprocessing.py` matches the code.
+> **Documentation discrepancy.** The markdown table in Notebook 04 describes the order as *Grayscale → CLAHE → Gaussian → Median*. The actual code in `preprocessing.preprocess_pipeline()` runs **Grayscale → Gaussian → Median → CLAHE**. The **code order is what executes**, and it is the order documented throughout this README. The module docstring in `src/preprocessing.py` matches the code.
 
 ---
 
@@ -1302,7 +1302,7 @@ Notebook 03 derives the erosion from physical units: `erosion_px = max(2, int(0.
 | **Why needed** | Foreground ratio and largest-component features both need a binary mask; Otsu adapts per-slot so no global constant is required |
 | **Expected result** | Structured white regions on occupied bays, sparse noise on empty asphalt |
 
-> **📌 Verified behaviour of `fuse_channels()`.** The function performs a weighted soft vote with default weights `(0.4, 0.3)`. With no reference-difference channel supplied, the weights are renormalised to `0.571 / 0.429` and a pixel is foreground when the weighted sum exceeds `0.5`. Since **0.571 > 0.5** and **0.429 < 0.5**, the Otsu channel alone always decides the outcome. Verified empirically: `fused == otsu_binary` is **exactly true** for random inputs. In other words, **as currently configured the adaptive channel has no effect on the output.** Several figure titles label this panel "Otsu ∩ Adaptive", which does not match the implemented logic. This is discussed further in [Challenges Faced](#-challenges-faced).
+> **Verified behaviour of `fuse_channels()`.** The function performs a weighted soft vote with default weights `(0.4, 0.3)`. With no reference-difference channel supplied, the weights are renormalised to `0.571 / 0.429` and a pixel is foreground when the weighted sum exceeds `0.5`. Since **0.571 > 0.5** and **0.429 < 0.5**, the Otsu channel alone always decides the outcome. Verified empirically: `fused == otsu_binary` is **exactly true** for random inputs. In other words, **as currently configured the adaptive channel has no effect on the output.** Several figure titles label this panel "Otsu ∩ Adaptive", which does not match the implemented logic. This is discussed further in [Challenges Faced](#challenges-faced).
 
 ---
 
@@ -1347,7 +1347,7 @@ Notebook 03 derives the erosion from physical units: `erosion_px = max(2, int(0.
 | `otsu_separability` | 0.7292 | 0.0476 | 0.6690 | 0.0675 |
 | `mean_saturation` | 0.1502 | 0.0929 | 0.1186 | 0.0462 |
 
-Note that `foreground_ratio` and `largest_component` run **opposite** to the intuition stated in the module docstrings — vacant bays score *higher* on both (0.9468 vs. 0.6976; 0.9285 vs. 0.6336). This is a direct consequence of Otsu binarising uniform empty asphalt into a single large white region. Because the weighted score adds these features positively, this inversion actively works against the classifier — see [Challenges Faced](#-challenges-faced).
+Note that `foreground_ratio` and `largest_component` run **opposite** to the intuition stated in the module docstrings — vacant bays score *higher* on both (0.9468 vs. 0.6976; 0.9285 vs. 0.6336). This is a direct consequence of Otsu binarising uniform empty asphalt into a single large white region. Because the weighted score adds these features positively, this inversion actively works against the classifier — see [Challenges Faced](#challenges-faced).
 
 ---
 
@@ -1376,7 +1376,7 @@ Note that `foreground_ratio` and `largest_component` run **opposite** to the int
 | 7 | `otsu_separability` | 0.5310 | 0.0301 |
 | 8 | `mean_saturation` | 0.0924 | 0.0052 |
 
-> **📌 Result worth noting.** `src/decide.py` ships hand-picked `DEFAULT_WEIGHTS` that assign `edge_density` the **highest** weight (0.30), on the stated reasoning that "a car is an edge factory". The measured Fisher analysis **contradicts** this: `edge_density` ranks **6th of 8** (J = 1.1292), while `gradient_magnitude` dominates at J = 5.3588. The tuned `thresholds.yaml` follows the data, not the assumption — `edge_density` receives 0.0639. The hand-picked defaults remain in the source as fallbacks when `thresholds.yaml` is absent.
+> **Result worth noting.** `src/decide.py` ships hand-picked `DEFAULT_WEIGHTS` that assign `edge_density` the **highest** weight (0.30), on the stated reasoning that "a car is an edge factory". The measured Fisher analysis **contradicts** this: `edge_density` ranks **6th of 8** (J = 1.1292), while `gradient_magnitude` dominates at J = 5.3588. The tuned `thresholds.yaml` follows the data, not the assumption — `edge_density` receives 0.0639. The hand-picked defaults remain in the source as fallbacks when `thresholds.yaml` is absent.
 
 ---
 
@@ -1455,7 +1455,7 @@ Ambiguous → scoring: 1690 samples  (60.3 %)
 | **Output** | 11,599 slot predictions with metrics, error ranking and a timing breakdown |
 | **Visualisation** | `16_overall_confusion.png`, `17_per_weather_comparison.png`, `18_timing_breakdown.png` |
 | **Why needed** | Three cherry-picked frames prove nothing; this is the number that goes in the report |
-| **Expected result** | Honest, reproducible metrics — see [Results](#-results) |
+| **Expected result** | Honest, reproducible metrics — see [Results](#results) |
 
 ---
 
@@ -1472,7 +1472,7 @@ Ambiguous → scoring: 1690 samples  (60.3 %)
 | **Expected result** | A single figure summarising system behaviour across all conditions |
 
 ---
-## 🖥️ Image Processing Pipeline
+## Image Processing Pipeline
 
 ```
                         Original Image  (1280 × 720 BGR)
@@ -1626,8 +1626,8 @@ The median filter is a **non-linear rank-order** filter: each pixel becomes the 
 
 | | Gaussian | Median |
 |---|---|---|
-| Removes salt-and-pepper noise | Partially (smears it) | ✅ Completely |
-| Preserves edges | ❌ Blurs them | ✅ Yes |
+| Removes salt-and-pepper noise | Partially (smears it) | Yes, completely |
+| Preserves edges | No, blurs them | Yes |
 | Cost | Cheap (separable) | Higher (requires sorting) |
 | Type | Linear convolution | Non-linear rank order |
 
@@ -1781,14 +1781,14 @@ Colour convention (BGR, OpenCV order):
 
 | Colour | BGR | Meaning |
 |--------|-----|---------|
-| 🟩 Green | `(0, 255, 0)` | Predicted **VACANT** |
-| 🟥 Red | `(0, 0, 255)` | Predicted **OCCUPIED** |
+| Green | `(0, 255, 0)` | Predicted **VACANT** |
+| Red | `(0, 0, 255)` | Predicted **OCCUPIED** |
 
 The double `putText` — black at thickness 2, then white at thickness 1 — produces an outlined label that stays legible over both light asphalt and dark vehicles.
 
 ---
 
-## 🧮 Algorithms Used
+## Algorithms Used
 
 Every algorithm below is **actually implemented and executed** in this repository.
 
@@ -1998,7 +1998,7 @@ Every algorithm below is **actually implemented and executed** in this repositor
 | | `cv2.resize(img, dsize, INTER_AREA)` | Aspect-preserving resize |
 
 ---
-## 📓 Notebook Walkthrough
+## Notebook Walkthrough
 
 Nine notebooks, executed in order. Each exists as a paired `.ipynb` (with stored outputs) and `.py` (jupytext percent format).
 
@@ -2007,19 +2007,19 @@ Nine notebooks, executed in order. Each exists as a paired `.ipynb` (with stored
 | 01 | `01_explore` | 12 / 13 | 4 | `labels.csv`, `data/samples/` |
 | 02 | `02_geometry` | 11 / 13 | 5 | `homography.npz` |
 | 03 | `03_roi` | 7 / 8 | 2 | `slots.json` |
-| 04 | `04_preprocessing` | 8 / 9 | 0 ⚠️ | figures to disk only |
+| 04 | `04_preprocessing` | 8 / 9 | 0 | figures to disk only |
 | 05 | `05_segmentation` | 7 / 9 | 4 | figures to disk only |
 | 06 | `06_features` | 8 / 10 | 4 | `feature_vectors.csv` |
 | 07 | `07_threshold_tuning` | 14 / 12 | 4 | `thresholds.yaml` |
 | 08 | `08_evaluation` | 11 / 11 | 4 | `outputs/annotated/*.png` |
 | 09 | `09_final_report` | 7 / 10 | 1 | results gallery |
 
-> **⚠️ Notebook 04 note.** Its figures were **saved to `outputs/screenshots/`** but **not embedded** in the `.ipynb`. The backend-detection guard at the top (`try: get_ipython() except NameError: matplotlib.use('Agg')`) resolved to the non-interactive Agg backend during that execution, producing `UserWarning: FigureCanvasAgg is non-interactive, and thus cannot be shown`. All four PNGs exist on disk and are displayed in the [Output Gallery](#️-output-gallery); only the inline previews are missing. Re-running the notebook in an interactive Jupyter session restores them.
+> **Notebook 04 note.** Its figures were **saved to `outputs/screenshots/`** but **not embedded** in the `.ipynb`. The backend-detection guard at the top (`try: get_ipython() except NameError: matplotlib.use('Agg')`) resolved to the non-interactive Agg backend during that execution, producing `UserWarning: FigureCanvasAgg is non-interactive, and thus cannot be shown`. All four PNGs exist on disk and are displayed in the [Output Gallery](#output-gallery); only the inline previews are missing. Re-running the notebook in an interactive Jupyter session restores them.
 
 ---
 
 <details open>
-<summary><h3>📘 Notebook 01 — Dataset Exploration & EDA</h3></summary>
+<summary><h3>Notebook 01 — Dataset Exploration & EDA</h3></summary>
 
 **Purpose.** Establish what the data is before writing any processing code: structure, volume, lighting characteristics, annotation format, and the geometric problem to be solved.
 
@@ -2063,7 +2063,7 @@ Curated 21 sample frames (7 sunny, 7 cloudy, 7 rainy)
 ---
 
 <details open>
-<summary><h3>📗 Notebook 02 — Camera Geometry & Perspective Transform</h3></summary>
+<summary><h3>Notebook 02 — Camera Geometry & Perspective Transform</h3></summary>
 
 **Purpose.** Derive and validate the homography that rectifies the oblique camera view.
 
@@ -2109,7 +2109,7 @@ Estimated scale: 14.4 px/m
 ---
 
 <details open>
-<summary><h3>📙 Notebook 03 — Region of Interest Extraction</h3></summary>
+<summary><h3>Notebook 03 — Region of Interest Extraction</h3></summary>
 
 **Purpose.** Turn 100 polygons into 100 cleanly isolated, individually masked image patches.
 
@@ -2139,7 +2139,7 @@ Successfully re-loaded 100 slots!
 ---
 
 <details open>
-<summary><h3>📕 Notebook 04 — Image Preprocessing Pipeline</h3></summary>
+<summary><h3>Notebook 04 — Image Preprocessing Pipeline</h3></summary>
 
 **Purpose.** Show what each preprocessing operator does and justify the order.
 
@@ -2161,7 +2161,7 @@ Demo occupied slot: 2
 Demo vacant slot:   1
 ```
 
-**Visualisation.** `08_preprocessing_ladder.png`, `08_clahe_histograms.png`, `08_filter_comparison.png`, `08_sunny_vs_cloudy.png` — all on disk; see the ⚠️ note above about inline embedding.
+**Visualisation.** `08_preprocessing_ladder.png`, `08_clahe_histograms.png`, `08_filter_comparison.png`, `08_sunny_vs_cloudy.png` — all on disk; see the note above about inline embedding.
 
 **Learning outcome.** A genuinely subtle detail worth studying: the histogram cell masks out zero-padded corners with `gray[mask > 0]`. A bounding box around an *angled* bay is mostly padding at the corners, and counting those zeros puts a huge spike at intensity 0 that flattens the real distribution into invisibility. **Correct histogram analysis requires correct masking** — and the inline comment in the notebook explains exactly this.
 
@@ -2172,7 +2172,7 @@ Demo vacant slot:   1
 ---
 
 <details open>
-<summary><h3>📓 Notebook 05 — Segmentation & Morphological Operations</h3></summary>
+<summary><h3>Notebook 05 — Segmentation & Morphological Operations</h3></summary>
 
 **Purpose.** Compare all three thresholding families, demonstrate shadow suppression, and show every morphological operator.
 
@@ -2201,7 +2201,7 @@ Occupied slot: 2, Vacant slot: 1
 ---
 
 <details open>
-<summary><h3>📔 Notebook 06 — Feature Extraction & Analysis</h3></summary>
+<summary><h3>Notebook 06 — Feature Extraction & Analysis</h3></summary>
 
 **Purpose.** Build the labelled feature matrix and discover which features actually discriminate.
 
@@ -2244,7 +2244,7 @@ Fisher Discriminant Ratios (higher = better separation):
 ---
 
 <details open>
-<summary><h3>📒 Notebook 07 — Threshold Tuning & Evaluation</h3></summary>
+<summary><h3>Notebook 07 — Threshold Tuning & Evaluation</h3></summary>
 
 **Purpose.** Calibrate every numeric decision boundary from data and produce the first full evaluation.
 
@@ -2292,7 +2292,7 @@ Test frame accuracy: 0.6500 | Test frame F1: 0.7826
 ---
 
 <details open>
-<summary><h3>📚 Notebook 08 — Large-Scale Evaluation & Timing Benchmarks</h3></summary>
+<summary><h3>Notebook 08 — Large-Scale Evaluation & Timing Benchmarks</h3></summary>
 
 **Purpose.** Produce the headline numbers on a large, diverse set, and profile where the time goes.
 
@@ -2347,7 +2347,7 @@ Saved: outputs/annotated/rainy_result.png  — 65.0% occupied
 ---
 
 <details open>
-<summary><h3>📖 Notebook 09 — Final Report</h3></summary>
+<summary><h3>Notebook 09 — Final Report</h3></summary>
 
 **Purpose.** Consolidate the project into a single presentable deliverable.
 
@@ -2390,7 +2390,7 @@ Weather distribution: cloudy 1000 | rainy 1000 | sunny 802
 
 ---
 
-## 🖼️ Output Gallery
+## Output Gallery
 
 All 29 figures in `outputs/screenshots/` plus 3 in `outputs/annotated/`, in generation order.
 
@@ -2509,7 +2509,7 @@ Two notebook cells display figures inline without persisting them, so they exist
 Both calls pass `None` as the filename to `show_and_save_fig()`.
 
 ---
-## 📊 Results
+## Results
 
 All numbers below are taken verbatim from the executed notebook outputs stored in this repository. Nothing is estimated or projected.
 
@@ -2567,9 +2567,9 @@ FP and FN are nearly balanced (1,572 vs. 1,409), which is why precision (0.7204)
 
 | Weather | Annotated output | Predicted occupancy |
 |---------|------------------|--------------------:|
-| ☀️ Sunny | `outputs/annotated/sunny_result.png` | **30.0 %** (30 / 100) |
-| ☁️ Cloudy | `outputs/annotated/cloudy_result.png` | **45.0 %** (45 / 100) |
-| 🌧️ Rainy | `outputs/annotated/rainy_result.png` | **65.0 %** (65 / 100) |
+| Sunny | `outputs/annotated/sunny_result.png` | **30.0 %** (30 / 100) |
+| Cloudy | `outputs/annotated/cloudy_result.png` | **45.0 %** (45 / 100) |
+| Rainy | `outputs/annotated/rainy_result.png` | **65.0 %** (65 / 100) |
 
 Held-out end-to-end test frame (Notebook 07): predicted **73 occupied / 27 vacant = 73.0 %**, with a per-frame accuracy of **0.6500** and F1 of **0.7826**.
 
@@ -2577,9 +2577,9 @@ Held-out end-to-end test frame (Notebook 07): predicted **73 occupied / 27 vacan
 
 | Weather | Samples | Accuracy | F1 | TN | FP | FN | TP |
 |---------|--------:|---------:|---:|---:|---:|---:|---:|
-| ☀️ **Sunny** | 3,603 | 0.698 | 0.652 | 1,498 | 384 | 703 | 1,018 |
-| ☁️ **Cloudy** | 4,000 | 0.713 | 0.605 | 1,970 | 865 | 284 | 881 |
-| 🌧️ **Rainy** | 3,996 | **0.814** | **0.852** | 1,100 | 323 | 422 | 2,151 |
+| **Sunny** | 3,603 | 0.698 | 0.652 | 1,498 | 384 | 703 | 1,018 |
+| **Cloudy** | 4,000 | 0.713 | 0.605 | 1,970 | 865 | 284 | 881 |
+| **Rainy** | 3,996 | **0.814** | **0.852** | 1,100 | 323 | 422 | 2,151 |
 
 ```
 Accuracy by weather
@@ -2613,7 +2613,7 @@ F1 by weather
 
 Performance on the tuning set (76.2 %) is **2 points higher** than on the larger evaluation set (74.3 %) — a small, expected optimism gap from calibrating thresholds on that data.
 
-### ⚠️ Method comparison — the negative result
+### Method comparison — the negative result
 
 This is the most important finding in the project, and it does not favour the design:
 
@@ -2631,7 +2631,7 @@ This is the most important finding in the project, and it does not favour the de
 2. **Fisher ratios measure separation, not direction.** `J = (μ₁ − μ₀)² / (σ₁² + σ₀²)` squares the mean difference, so a strongly *inversely* correlated feature earns a **high** weight — exactly the wrong outcome for an additive score. `foreground_ratio` (J = 1.9695) ranks 4th of 8 precisely because it separates the classes well, in the wrong direction.
 3. **The strongest feature is diluted.** Edge density, which alone reaches F1 0.8063, receives a weight of just **0.0639** — the 6th largest of eight. Its signal is averaged away by weaker and inverted terms.
 
-**The fix is small and concrete:** flip the sign of the two inverted features (use `1 − foreground_ratio` and `1 − largest_component`) or derive weights from a *signed* statistic such as the point-biserial correlation instead of the squared Fisher ratio. This is documented in [Future Improvements](#-future-improvements). It was identified through the ablation study but not applied in the current results, which are reported as measured.
+**The fix is small and concrete:** flip the sign of the two inverted features (use `1 − foreground_ratio` and `1 − largest_component`) or derive weights from a *signed* statistic such as the point-biserial correlation instead of the squared Fisher ratio. This is documented in [Future Improvements](#future-improvements). It was identified through the ablation study but not applied in the current results, which are reported as measured.
 
 ### Error analysis — the 10 worst bays
 
@@ -2707,7 +2707,7 @@ Classification      ▏                                                        0
 
 ---
 
-## 🌟 Project Highlights
+## Project Highlights
 
 ### 1. Every claim is backed by a measurement
 
@@ -2768,7 +2768,7 @@ Every module opens with a docstring containing the relevant **theory**: `geometr
 
 ---
 
-## 🧗 Challenges Faced
+## Challenges Faced
 
 Each challenge below is described with the evidence that revealed it, and the current status.
 
@@ -2790,7 +2790,7 @@ h31 ≈ -2.5e-20    h32 ≈ -7.0e-38     ← projective terms are zero
 
 Measured outcome: the area ratio was **2.9× before and 2.9× after**. Everything scaled by a constant, so relative differences were preserved exactly.
 
-**Status.** ⚠️ **Unresolved.** The fix requires four *genuinely coplanar ground features* — for example, the corners of a rectangular lane-marking region — rather than a bounding box. This is the most likely single cause of the bays 89–100 failure cluster, and is the highest-priority item in [Future Improvements](#-future-improvements).
+**Status.** **Unresolved.** The fix requires four *genuinely coplanar ground features* — for example, the corners of a rectangular lane-marking region — rather than a bounding box. This is the most likely single cause of the bays 89–100 failure cluster, and is the highest-priority item in [Future Improvements](#future-improvements).
 
 ### 2. Lighting variation across weather conditions
 
@@ -2800,7 +2800,7 @@ Measured outcome: the area ratio was **2.9× before and 2.9× after**. Everythin
 
 **Measured outcome.** Partially successful. Accuracy holds within a 12-point band (69.8 % – 81.4 %) across conditions, but **cloudy F1 collapses to 0.605** with 865 false positives. Flat overcast lighting flattens `intensity_std` and `local_variance` — jointly 40.7 % of the total weight — so empty asphalt starts scoring like a vehicle.
 
-**Status.** ⚠️ **Partially mitigated.** Weather-conditional thresholds are proposed in Future Improvements.
+**Status.** **Partially mitigated.** Weather-conditional thresholds are proposed in Future Improvements.
 
 ### 3. Shadows
 
@@ -2810,7 +2810,7 @@ Measured outcome: the area ratio was **2.9× before and 2.9× after**. Everythin
 
 **Measured outcome.** Demonstrated visually in `09_shadow_suppression.png`, and sunny frames do show the worst recall in the evaluation (703 false negatives).
 
-**Status.** ⚠️ **Implemented but not integrated.** `ParkingPipeline.process_frame()` imports the function but never calls it, and neither do the notebook evaluation loops. Its effect on the headline metrics is therefore **unmeasured** — it cannot be credited with any of the reported performance.
+**Status.** **Implemented but not integrated.** `ParkingPipeline.process_frame()` imports the function but never calls it, and neither do the notebook evaluation loops. Its effect on the headline metrics is therefore **unmeasured** — it cannot be credited with any of the reported performance.
 
 ### 4. Threshold selection
 
@@ -2818,7 +2818,7 @@ Measured outcome: the area ratio was **2.9× before and 2.9× after**. Everythin
 
 **What was done.** Replaced guessing with measurement: a 100-point sweep over edge density recording all four metrics, a 100-point sweep over the weighted score, and percentile-derived fast-path bounds (97th percentile of vacant for τ_high, 3rd percentile of occupied for τ_low).
 
-**Measured outcome.** ✅ **Successful.** Edge density peaks at F1 0.8054 (τ = 0.1584) with a broad, flat optimum — meaning the choice is not knife-edge sensitive. The tuning-vs-evaluation gap is only 2 points (76.2 % → 74.3 %), indicating the thresholds generalise reasonably.
+**Measured outcome.** **Successful.** Edge density peaks at F1 0.8054 (τ = 0.1584) with a broad, flat optimum — meaning the choice is not knife-edge sensitive. The tuning-vs-evaluation gap is only 2 points (76.2 % → 74.3 %), indicating the thresholds generalise reasonably.
 
 ### 5. ROI alignment and neighbour bleed
 
@@ -2826,7 +2826,7 @@ Measured outcome: the area ratio was **2.9× before and 2.9× after**. Everythin
 
 **What was done.** Three-tier masking — bounding box for fast slicing, polygon mask for correctness, eroded core mask (−3 px) to exclude painted lane lines and boundary overhang.
 
-**Measured outcome.** ✅ **Successful.** Notebook 04's histogram cell demonstrates the failure mode this prevents: without masking, zero-padded corners create a huge spike at intensity 0 that flattens the entire distribution.
+**Measured outcome.** **Successful.** Notebook 04's histogram cell demonstrates the failure mode this prevents: without masking, zero-padded corners create a huge spike at intensity 0 that flattens the entire distribution.
 
 ### 6. The multi-feature score performed worse than one feature
 
@@ -2836,12 +2836,12 @@ Measured outcome: the area ratio was **2.9× before and 2.9× after**. Everythin
 
 | Feature | Occupied mean | Vacant mean | Direction | Weight |
 |---------|-------------:|-----------:|-----------|-------:|
-| `foreground_ratio` | 0.6976 | **0.9468** | ❌ Inverted | 0.1115 |
-| `largest_component` | 0.6336 | **0.9285** | ❌ Inverted | 0.0786 |
+| `foreground_ratio` | 0.6976 | **0.9468** | (Inverted) | 0.1115 |
+| `largest_component` | 0.6336 | **0.9285** | (Inverted) | 0.0786 |
 
 Both features score **higher on empty bays**, because Otsu binarises uniform asphalt into one large white region. The weighted score adds every term positively, so **19.0 % of the total weight actively pushes empty bays toward "occupied"**. And because the Fisher ratio *squares* the mean difference, it cannot distinguish "strongly correlated" from "strongly anti-correlated" — it assigned these inverted features substantial weight precisely because they separate the classes well, in the wrong direction.
 
-**Status.** ⚠️ **Diagnosed, not fixed.** The remedy is a two-line change (invert the two features, or switch to a signed weighting statistic). The results in this README are reported as measured, without that fix applied.
+**Status.** **Diagnosed, not fixed.** The remedy is a two-line change (invert the two features, or switch to a signed weighting statistic). The results in this README are reported as measured, without that fix applied.
 
 ### 7. Channel fusion that does not fuse
 
@@ -2851,7 +2851,7 @@ Both features score **higher on empty bays**, because Otsu binarises uniform asp
 
 Several figure titles label this panel "Otsu ∩ Adaptive", which does not describe the implemented logic (a true intersection would be `otsu & adaptive`).
 
-**Status.** ⚠️ **Identified.** Fixable either by lowering the fusion cut-off below 0.429 so both channels can contribute, or by replacing the soft vote with an explicit AND/OR.
+**Status.** **Identified.** Fixable either by lowering the fusion cut-off below 0.429 so both channels can contribute, or by replacing the soft vote with an explicit AND/OR.
 
 ### 8. Otsu's bimodality assumption on empty bays
 
@@ -2859,7 +2859,7 @@ Several figure titles label this panel "Otsu ∩ Adaptive", which does not descr
 
 **What was done.** Applied Otsu **per bay** rather than per frame, where the assumption holds far better; and captured the separability η as a feature so the algorithm's own confidence becomes an input.
 
-**Measured outcome.** ⚠️ **Partially effective.** η does differ between classes (0.7292 occupied vs. 0.6690 vacant) but weakly — Fisher J = 0.5310, ranking 7th of 8. More importantly, this unresolved issue is the root cause of the inverted `foreground_ratio` and `largest_component` features in challenge 6.
+**Measured outcome.** **Partially effective.** η does differ between classes (0.7292 occupied vs. 0.6690 vacant) but weakly — Fisher J = 0.5310, ranking 7th of 8. More importantly, this unresolved issue is the root cause of the inverted `foreground_ratio` and `largest_component` features in challenge 6.
 
 ### 9. Systematic failure in the far row
 
@@ -2867,7 +2867,7 @@ Several figure titles label this panel "Otsu ∩ Adaptive", which does not descr
 
 **Diagnosis.** Bay 96 performing below random is a signature of a **consistent sign flip**, not noise. The bottom row sits at the far edge of the warped image, is partially cropped by the border, and — because the homography is a pure scale rather than a true rectification (challenge 1) — is the region whose geometry is least well normalised.
 
-**Status.** ⚠️ **Identified, root cause traced to challenge 1.** Fixing the homography is the prerequisite for fixing this.
+**Status.** **Identified, root cause traced to challenge 1.** Fixing the homography is the prerequisite for fixing this.
 
 ### 10. Performance bottleneck in feature extraction
 
@@ -2875,7 +2875,7 @@ Several figure titles label this panel "Otsu ∩ Adaptive", which does not descr
 
 **Diagnosis.** `compute_otsu_separability()` runs a **256-iteration pure-Python loop** for every bay to find the optimal threshold. At 100 bays that is ~25,600 interpreted iterations per frame, and this feature contributes only J = 0.5310 (7th of 8) with a weight of 0.0301.
 
-**Status.** ⚠️ **Identified.** Two clear options: vectorise the loop with NumPy cumulative sums, or drop the feature entirely given its marginal contribution. Either would give a large speedup at negligible accuracy cost.
+**Status.** **Identified.** Two clear options: vectorise the loop with NumPy cumulative sums, or drop the feature entirely given its marginal contribution. Either would give a large speedup at negligible accuracy cost.
 
 ### 11. Documentation drifting from implementation
 
@@ -2893,7 +2893,7 @@ Building across many sessions, several docstrings and markdown cells fell out of
 | `config.yaml` `perspective.output_size` | `[600, 800]` | Notebook 02 hard-codes 800×1000 |
 | `config.yaml` `decision.*` | Four vote-counting thresholds | Superseded by `thresholds.yaml`; unused |
 
-**Status.** ✅ **Catalogued.** Every discrepancy is flagged at its point of use in this README, and in each case the **measured or executed behaviour** is what is reported.
+**Status.** **Catalogued.** Every discrepancy is flagged at its point of use in this README, and in each case the **measured or executed behaviour** is what is reported.
 
 ### 12. Dataset scale and repository hygiene
 
@@ -2901,14 +2901,14 @@ Building across many sessions, several docstrings and markdown cells fell out of
 
 **What was done.** `curate_samples()` extracts 21 representative frames into `data/samples/` so development can proceed without touching the full dataset; `labels.csv` is built from every 10th frame rather than all 4,473.
 
-**Status.** ⚠️ **Partially addressed.** A `.gitignore` excluding `venv/`, `data/raw/` and `__pycache__/` is needed before the first commit — see [Installation Step 8](#step-8--recommended-repository-hygiene). Without it, `git add .` would attempt to commit 8.2 GB.
+**Status.** **Partially addressed.** A `.gitignore` excluding `venv/`, `data/raw/` and `__pycache__/` is needed before the first commit — see [Installation Step 8](#step-8--recommended-repository-hygiene). Without it, `git add .` would attempt to commit 8.2 GB.
 
 ---
-## 🚀 Future Improvements
+## Future Improvements
 
 Ordered by expected impact per unit of effort. The first four address problems **measured in this repository**, so their value is not speculative.
 
-### Priority 1 — Fix the two inverted features 🔴
+### Priority 1 — Fix the two inverted features
 
 **Problem measured:** `foreground_ratio` (0.9468 vacant vs. 0.6976 occupied) and `largest_component` (0.9285 vs. 0.6336) both score *higher* on empty bays, yet contribute **19.0 % of the weight positively** to the occupancy score.
 
@@ -2930,7 +2930,7 @@ weight = abs(r); sign = np.sign(r)
 
 **Expected impact:** should close most of the 4.5-point gap to the single-feature baseline. **Effort:** ~10 lines.
 
-### Priority 2 — Recompute the homography from true ground correspondences 🔴
+### Priority 2 — Recompute the homography from true ground correspondences
 
 **Problem measured:** the current `H` is a pure anisotropic scale (`h12 ≈ h21 ≈ h31 ≈ h32 ≈ 0`); the BEV slot-area ratio stayed at **2.9× → 2.9×**.
 
@@ -2945,7 +2945,7 @@ assert abs(H[2,0]) > 1e-6 or abs(H[2,1]) > 1e-6, "still degenerate — points ar
 
 **Expected impact:** likely fixes the bays 89–100 failure cluster (nine of the ten worst bays) and delivers the promised area normalisation. **Effort:** one afternoon of point selection plus re-running Notebooks 02–08.
 
-### Priority 3 — Integrate HSV shadow suppression 🟠
+### Priority 3 — Integrate HSV shadow suppression
 
 **Problem measured:** sunny frames have the worst recall (703 false negatives). `shadow_suppress_hsv()` is implemented but **never called** in the pipeline.
 
@@ -2964,7 +2964,7 @@ cleaned = clean_binary_mask(fused)
 
 **Expected impact:** unknown until measured — which is exactly why it should be measured. **Effort:** 2 lines plus a re-run.
 
-### Priority 4 — Repair or replace the channel fusion 🟠
+### Priority 4 — Repair or replace the channel fusion
 
 **Problem measured:** `fuse_channels()` output is **exactly equal to the Otsu mask**; the adaptive channel is computed but discarded.
 
@@ -2982,7 +2982,7 @@ fused = cv2.bitwise_and(otsu_binary, adaptive_binary)   # true intersection
 
 **Expected impact:** either recovers value from an already-paid computation, or justifies deleting the adaptive branch and reclaiming ~11 % of frame time. **Effort:** 1 line.
 
-### Priority 5 — Vectorise the Otsu separability loop 🟡
+### Priority 5 — Vectorise the Otsu separability loop
 
 **Problem measured:** feature extraction is **64.7 %** of frame time; `compute_otsu_separability()` runs a 256-iteration Python loop per bay (~25,600 iterations/frame) for a feature ranking 7th of 8.
 
@@ -3087,39 +3087,39 @@ Outside this project's constraints, but the honest next step: the 8 extracted fe
 
 ---
 
-## 🏢 Applications
+## Applications
 
 The same pipeline generalises to any fixed-camera, fixed-layout occupancy problem. Each application below notes what would need to change.
 
-### 🛍️ Shopping malls
+### Shopping malls
 
 Large surface lots with high turnover. Real-time "level 2: 47 spaces free" signage cuts search traffic at the entrance and reduces congestion inside. Multiple cameras would each need their own `homography.npz` and `slots.json`; thresholds could be shared if the lots have similar surfaces.
 
-### 🏥 Hospitals
+### Hospitals
 
 Emergency-bay and ambulance-space monitoring where a wrong answer has real consequences. This favours a **precision-weighted** operating point — the threshold sweep in Notebook 07 already produces the full precision/recall curve, so shifting the operating point to minimise false "space available" reports is a config change, not a redesign.
 
-### 🎓 Universities
+### Universities
 
 The dataset's own origin — PKLot was collected on the UFPR campus. Campus lots have strong daily and semester cycles, so aggregated occupancy data supports permit allocation and shuttle scheduling. The 12.9 FPS throughput means a single machine could cover a whole campus.
 
-### ✈️ Airports
+### Airports
 
 Long-stay lots where occupancy changes slowly. A frame every few minutes is plenty, so the compute cost is negligible. Weather robustness matters here since these lots are typically uncovered — and the per-weather evaluation in this project is directly relevant.
 
-### 🏙️ Smart cities
+### Smart cities
 
 On-street parking monitoring from existing traffic cameras, feeding a municipal open-data API. The strongest argument for the classical approach in this setting is **auditability**: a public authority can inspect exactly why a space was reported occupied, which is far harder with a learned model.
 
-### 🏭 Industrial and logistics yards
+### Industrial and logistics yards
 
 Truck and trailer bays, container slots. Larger vehicles produce stronger feature signals than cars, so discrimination should be easier — though bay polygons would need re-annotation for the different footprint.
 
-### 🏘️ Residential complexes
+### Residential complexes
 
 Assigned-bay compliance and visitor-space availability. Low turnover means temporal hysteresis (`apply_hysteresis()`, already implemented) would be particularly effective, and the low frame rate keeps hardware costs minimal.
 
-### 🎪 Event and stadium parking
+### Event and stadium parking
 
 Extreme surge conditions where knowing which sections are filling drives active traffic direction. The per-row breakdown already produced by `stats.per_row_breakdown()` maps directly onto "section" reporting.
 
@@ -3137,7 +3137,7 @@ No retraining, no GPU, no labelled dataset of thousands of images. Steps 2–4 a
 
 ---
 
-## 🎓 Learning Outcomes
+## Learning Outcomes
 
 What this project taught, organised by topic.
 
@@ -3209,7 +3209,7 @@ What this project taught, organised by topic.
 - **Configuration as artifact** — persisting `H`, slot geometry and thresholds means inference does not need the notebooks or the 3.9 GB dataset
 - **Notebooks as narrative, modules as implementation** — the division that keeps both readable
 - **Jupytext pairing** — `.py` mirrors make notebooks reviewable in a normal diff
-- **Documentation drifts unless checked** — nine documentation/implementation mismatches accumulated in this project. Catalogued honestly in [Challenges Faced](#-challenges-faced).
+- **Documentation drifts unless checked** — nine documentation/implementation mismatches accumulated in this project. Catalogued honestly in [Challenges Faced](#challenges-faced).
 - **Reproducibility as a property, not an aspiration** — a fully deterministic pipeline plus persisted config means identical outputs on every run
 
 ### The broader lesson
@@ -3218,11 +3218,11 @@ The most valuable outcome was not the 74.3 % accuracy. It was learning that **a 
 
 ---
 
-## 📄 License
+## License
 
 This project is released under the **MIT License**.
 
-> **⚠️ Note:** there is currently **no `LICENSE` file** in this repository. The original `README.md` described the work as an *"Academic project — Digital Image Processing course."* To make the MIT terms below binding, save the text to a file named `LICENSE` in the project root.
+> **Note:** there is currently **no `LICENSE` file** in this repository. The original `README.md` described the work as an *"Academic project — Digital Image Processing course."* To make the MIT terms below binding, save the text to a file named `LICENSE` in the project root.
 
 <details>
 <summary><b>MIT License — full text (click to expand)</b></summary>
@@ -3276,7 +3276,7 @@ PKLot is distributed by the Federal University of Paraná under its own terms. I
 
 ---
 
-## 🙏 Acknowledgements
+## Acknowledgements
 
 Only entities that genuinely contributed to this work are listed.
 
@@ -3304,7 +3304,7 @@ Sincere thanks to **Paulo R. L. Almeida, Luiz S. Oliveira, Alceu S. Britto Jr., 
 
 This work was produced as a **Digital Image Processing course project**. The constraint that motivated the whole design — *classical techniques only, no machine learning* — came from the course requirements, and it is what turned a routine detection task into a genuine study of image processing fundamentals.
 
-> **📌 Placeholders.** Specific institution, department, course code and supervisor are not recorded anywhere in this repository, so they are left as placeholders rather than invented:
+> **Placeholders.** Specific institution, department, course code and supervisor are not recorded anywhere in this repository, so they are left as placeholders rather than invented:
 >
 > - **Institution:** `<Your University>`
 > - **Department:** `<Your Department>`
@@ -3325,7 +3325,7 @@ The methods implemented here rest on foundational computer-vision work:
 
 ---
 
-## 👤 Author
+## Author
 
 <table>
 <tr>
@@ -3344,10 +3344,10 @@ Automatic Parking Occupancy Estimation using Classical Image Processing
 
 | | |
 |---|---|
-| 📧 **Email** | `its.alamjayed@gmail.com` |
-| 💼 **LinkedIn** | `<add your LinkedIn URL>` |
-| 🐙 **GitHub** | `<add your GitHub profile URL>` |
-| 🌐 **Portfolio** | `<add your portfolio URL>` |
+| **Email** | `its.alamjayed@gmail.com` |
+| **LinkedIn** | `<add your LinkedIn URL>` |
+| **GitHub** | `<add your GitHub profile URL>` |
+| **Portfolio** | `<add your portfolio URL>` |
 
 ### Project statistics
 

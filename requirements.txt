@@ -4,29 +4,40 @@
 # =============================================================================
 # Runtime dependencies — everything src/ and app.py need.
 #
-# This file is what Streamlit Community Cloud installs, so it is kept minimal
-# and headless. To also run the notebooks, install requirements-dev.txt.
+# This is the file Streamlit Community Cloud installs, so it is kept minimal,
+# headless, and installable on Python 3.10 through 3.13. To also run the
+# notebooks, install requirements-dev.txt.
 # =============================================================================
 
-# Image Processing
-opencv-python-headless==4.10.0.84  # Core CV library. Headless build: identical
-                                   # API minus the GUI functions (imshow /
-                                   # namedWindow / waitKey), none of which this
-                                   # project uses. The regular opencv-python
-                                   # wheel needs libGL.so.1, which is absent
-                                   # from Streamlit Cloud containers and fails
-                                   # at import.
-numpy==1.26.4                      # Array operations and linear algebra
+# --- Image processing -------------------------------------------------------
+# Headless build: identical API minus the GUI functions (imshow / namedWindow /
+# waitKey), none of which this project calls. The regular opencv-python wheel
+# links against libGL.so.1, which is absent from Streamlit Cloud containers.
+# Ships as an abi3 wheel, so this pin works on every Python 3.7+.
+opencv-python-headless==4.10.0.84
 
-# Visualization
-matplotlib==3.9.2                  # Plotting; used by src/visualize.py
+# --- Numerics ---------------------------------------------------------------
+# numpy 1.26.4 and pandas 2.2.2 publish wheels for cp39-cp312 only. On Python
+# 3.13 pip finds no wheel, tries to build from source, fails — and because that
+# aborts the whole install transaction, NOTHING gets installed and the app dies
+# on `import cv2` with a misleading ModuleNotFoundError. So the version is made
+# conditional: 3.12 and below get the exact pinned builds used in development,
+# 3.13+ gets the earliest release with wheels for it. Both combinations were
+# verified to produce byte-identical pipeline results.
+numpy==1.26.4 ; python_version < "3.13"
+numpy>=2.1,<3 ; python_version >= "3.13"
 
-# Data Handling
-pandas==2.2.2                      # Data tables
-PyYAML==6.0.2                      # Configuration file parsing
+pandas==2.2.2 ; python_version < "3.13"
+pandas>=2.2.3,<3 ; python_version >= "3.13"
 
-# Interactive app
-streamlit==1.60.0                  # Live pipeline explorer (app.py)
+# --- Visualization ----------------------------------------------------------
+matplotlib==3.9.2                  # publishes cp313 wheels; safe to pin exactly
+
+# --- Configuration ----------------------------------------------------------
+PyYAML==6.0.2                      # publishes cp313 wheels; safe to pin exactly
+
+# --- Interactive app --------------------------------------------------------
+streamlit==1.60.0                  # pure-python wheel; version-independent
 
 # =============================================================================
 # WARNING: The following are STRICTLY PROHIBITED in this project

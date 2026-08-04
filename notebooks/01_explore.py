@@ -64,7 +64,6 @@ np.random.seed(42)
 
 # Configuration
 config = load_config('config/config.yaml')
-print("Configuration loaded successfully!")
 
 # %% [markdown]
 # ## 2. Dataset Overview
@@ -288,7 +287,7 @@ if frames:
 # %% [markdown]
 # ## 7. Visualize Slot Annotations on Image
 #
-# Let's draw the PKLot slot polygons on the original image to verify
+# Draw slot polygons on the original image for verification
 # our parsing is correct.
 
 # %%
@@ -375,7 +374,7 @@ if frames:
         img = cv2.imread(frames[i]['image_path'])
         passes, diag = quality_gate(img)
 
-        status = "✅ PASS" if passes else "❌ REJECT"
+        status = "PASS" if passes else "REJECT"
         print(f"  Frame {i}: {status}")
         print(f"    Brightness: {diag['brightness']:.1f}  "
               f"Blur score: {diag['blur_score']:.1f}")
@@ -424,14 +423,14 @@ if frames:
 # ## Phase Summary
 #
 # ### What we accomplished
-# 1. ✅ Loaded and explored the PKLot dataset structure
-# 2. ✅ Visualized sample frames across sunny/cloudy/rainy conditions
-# 3. ✅ Analyzed intensity distributions (histograms)
-# 4. ✅ Parsed PKLot XML annotations → slot polygons + occupancy labels
-# 5. ✅ Demonstrated the perspective distortion problem (slot area ratio)
-# 6. ✅ Tested the quality gate (brightness + blur rejection)
-# 7. ✅ Exported ground truth CSV
-# 8. ✅ Curated ~20 sample frames
+# 1. Loaded and explored the PKLot dataset structure
+# 2. Visualized sample frames across sunny/cloudy/rainy conditions
+# 3. Analyzed intensity distributions (histograms)
+# 4. Parsed PKLot XML annotations and extracted slot polygons with occupancy labels
+# 5. Demonstrated the perspective distortion problem (slot area ratio)
+# 6. Tested the quality gate (brightness + blur rejection)
+# 7. Exported ground truth CSV
+# 8. Curated ~20 sample frames
 #
 # ### Key observations
 # - Slot areas vary by **up to 8x** between near and far rows
@@ -439,6 +438,6 @@ if frames:
 # - Sunny frames have **strong shadows** that will be our biggest challenge
 # - The dataset has **good class balance** across weather conditions
 #
-# ### Next: Notebook 02 — Camera Geometry & Perspective Transform
-# We'll compute the homography H to warp images into bird's-eye view,
-# equalizing slot areas and enabling consistent analysis.
+# ### Notebook 02 — Camera Geometry & Perspective Transform
+# The next step is computing the homography H to warp images into bird's-eye
+# view, equalizing slot areas and enabling consistent analysis.

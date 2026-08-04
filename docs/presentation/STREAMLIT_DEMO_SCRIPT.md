@@ -1,4 +1,4 @@
-# 🎛️ Live Demo Script — The Streamlit Explorer
+# Live Demo Script — The Streamlit Explorer
 
 **App:** `app.py` · launch with `streamlit run app.py`
 **Length:** ~6 minutes as written. Trim markers included for a 3-minute version.
@@ -10,13 +10,13 @@
 
 ## Before You Start
 
-| ✅ | Check |
+| | Check |
 |---|---|
 | ☐ | `streamlit run app.py` **before** the class walks in. First launch imports OpenCV and warms caches. |
-| ☐ | **Click the 🎚️ Twist tab once, then come back.** Cold compute is ~1.6 s across 1,999 bays; after that it is instant. Do this warm-up off-stage. |
+| ☐ | **Click the Twist tab once, then come back.** Cold compute is ~1.6 s across 1,999 bays; after that it is instant. Do this warm-up off-stage. |
 | ☐ | Browser zoom **80 %**. The sidebar plus a 100-bay image needs the width. |
 | ☐ | Confirm the header reads **cloudy · 2012-10-16_17_53_55 · 60% full**. That is the default and the numbers below assume it. |
-| ☐ | Know the panic button: **`R`** reruns, and **↺ Reset to tuned values** in the sidebar restores everything. |
+| ☐ | Know the panic button: **`R`** reruns, and **Reset to tuned values** in the sidebar restores everything. |
 
 **The one-line pitch when you switch to the app:**
 
@@ -26,7 +26,7 @@
 
 ## Act 1 · The homography, side by side (45 s)
 
-**Do:** Land on the **🔬 Pipeline Explorer** tab. Both images are already on screen.
+**Do:** Land on the **Pipeline Explorer** tab. Both images are already on screen.
 
 > *"Left is what the camera sees. Right is the same frame after the homography.*
 >
@@ -62,7 +62,7 @@
 > *"Same pipeline, empty bay. Watch the binary image — far less white — and the
 > edge density drops accordingly."*
 
-✂️ *3-minute version: keep this, drop Act 1's narration and just gesture at it.*
+*3-minute version: keep this, drop Act 1's narration and just gesture at it.*
 
 ---
 
@@ -71,7 +71,7 @@
 > *"Here's what a static figure can't do. I'm going to break my own pipeline,
 > one stage at a time, and you can watch the accuracy move."*
 
-Switch to the **🅿️ Whole Lot** tab first so the accuracy metric is visible while you drag.
+Switch to the **Whole Lot** tab first so the accuracy metric is visible while you drag.
 
 ### These three are verified and land hard
 
@@ -86,7 +86,7 @@ Switch to the **🅿️ Whole Lot** tab first so the accuracy metric is visible 
 > *"And that's the argument for every stage in the pipeline, made by deletion
 > rather than assertion."*
 
-✂️ *3-minute version: do **#1 only**. It's the most surprising and it ties directly back to Act 3.*
+*3-minute version: do **#1 only**. It's the most surprising and it ties directly back to Act 3.*
 
 ---
 
@@ -113,7 +113,7 @@ Switch to the **🅿️ Whole Lot** tab first so the accuracy metric is visible 
 
 ## Act 5 · The twist, live (90 s) — **your closing move**
 
-**Do:** Click **🎚️ The Twist (Act 8)**.
+**Do:** Click **The Twist (Act 8)**.
 
 > *"Last thing. In Act 6 the Fisher ranking told me edge density was my strongest
 > feature by a wide margin. So I ran the experiment I didn't want to run: throw
@@ -148,7 +148,7 @@ Switch to the **🅿️ Whole Lot** tab first so the accuracy metric is visible 
 
 ---
 
-## ⚠️ Landmines — do not touch these live
+## Landmines — do not touch these live
 
 **The CLAHE clip-limit slider does almost nothing, and on most bays literally nothing.**
 

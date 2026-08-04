@@ -1,4 +1,4 @@
-# 🎤 Presentation Script — Automatic Parking Occupancy Estimation
+# Presentation Script — Automatic Parking Occupancy Estimation
 
 **Deliverable presented:** `notebooks/00_COMPLETE_PROJECT.ipynb`
 (or `docs/presentation/parking-occupancy-presentation.html` — safer, see *Before You Start*)
@@ -9,7 +9,7 @@
 
 ## Before You Start
 
-| ✅ | Check |
+| | Check |
 |---|---|
 | ☐ | Open the **HTML** file, not the notebook. No kernel, no server, and no way to wipe an output by fat-fingering `Shift+Enter` mid-talk. |
 | ☐ | Scroll once to the bottom, then back to the top. Forces every image to load before you're live. |
@@ -65,7 +65,7 @@ Point at the sunny frame:
 > these shadows. They are dark, they are car-shaped, and they are not cars.
 > Everything in Acts 4 and 5 exists because of this one picture."*
 
-✂️ *7-min version: keep this — it sets up the shadow problem you pay off twice.*
+*7-min version: keep this — it sets up the shadow problem you pay off twice.*
 
 ---
 
@@ -110,7 +110,7 @@ Now the fix:
 > measure the confident core. I lose a little signal and I buy real
 > independence. Worth it."*
 
-✂️ *7-min version: compress to two sentences — overlap problem, erode inward.*
+*7-min version: compress to two sentences — overlap problem, erode inward.*
 
 ---
 
@@ -159,7 +159,7 @@ Point at the morphology stages:
 > holes inside the car body. Watch a scattered mess resolve into one solid
 > car-shaped blob."*
 
-✂️ *7-min version: cut the three-method comparison, keep HSV shadows + morphology.*
+*7-min version: cut the three-method comparison, keep HSV shadows + morphology.*
 
 ---
 
@@ -254,7 +254,7 @@ Now stop. Change your tone. This is the moment.
 > that's the system telling you something. The professional move is to listen to
 > it, not to hide the comparison."*
 
-✂️ *7-min version: **never cut this.** Cut Acts 3 and 5 first.*
+*7-min version: **never cut this.** Cut Acts 3 and 5 first.*
 
 ---
 

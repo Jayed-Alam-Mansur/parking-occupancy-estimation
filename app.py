@@ -31,14 +31,14 @@ from src.stats import compute_statistics
 from src.visualize import annotate_parking_image, create_legend
 
 st.set_page_config(page_title="Parking Occupancy — Classical CV",
-                   page_icon="🅿️", layout="wide")
+                   page_icon="P", layout="wide")
 
 FEATURES = ['edge_density', 'foreground_ratio', 'gradient_magnitude',
             'local_variance', 'largest_component', 'intensity_std',
             'otsu_separability', 'mean_saturation']
 
 
-# ───────────────────────────────────────────────────────── asset loading
+# Asset loading
 
 @st.cache_resource
 def load_assets():
@@ -69,7 +69,7 @@ def rgb(img):
     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 
-# ───────────────────────────────────────────────────────── the pipeline
+# Pipeline functions
 
 def slot_stages(bev, polygon, p):
     """Run one slot through every stage, keeping each intermediate."""
@@ -252,12 +252,12 @@ def corpus_features(p, thr):
     return pd.DataFrame(rows)
 
 
-# ───────────────────────────────────────────────────────── sidebar
+# Sidebar controls
 
 H, SIZE, SLOTS, TUNED, WEIGHTS, SRC_PTS, DST_PTS = load_assets()
 samples = list_samples()
 
-st.sidebar.title("🅿️ Controls")
+st.sidebar.title("Controls")
 
 weathers = sorted({s['weather'] for s in samples})
 w = st.sidebar.selectbox(
@@ -329,18 +329,18 @@ st.sidebar.caption("No ML anywhere in this app. Every stage is an OpenCV "
                    "primitive called from `src/`.")
 
 
-# ───────────────────────────────────────────────────────── main
+# Main content
 
 st.title("Parking Occupancy Estimation — Classical Image Processing")
 st.caption("One camera. No sensors. No machine learning. "
            "Move any slider and the whole pipeline recomputes live.")
 
 tab1, tab2, tab5, tab3, tab4 = st.tabs([
-    "🔬 Pipeline Explorer", "🅿️ Whole Lot", "📤 Your Own Image",
-    "🎚️ The Twist (Act 8)", "📖 The Story"])
+    "Pipeline Explorer", "Whole Lot", "Your Own Image",
+    "The Twist (Act 8)", "The Story"])
 
 
-# ── Tab 1 — stage by stage on one bay ────────────────────────────────
+# Tab 1 — stage by stage on one bay
 with tab1:
     res = process_frame(frame['jpg'], frame['xml'], P, THR)
     gt = res['gt']
@@ -404,7 +404,7 @@ with tab1:
                      width='stretch', hide_index=True)
 
 
-# ── Tab 2 — the whole lot ────────────────────────────────────────────
+# Tab 2 — the whole lot
 with tab2:
     res = process_frame(frame['jpg'], frame['xml'], P, THR)
     m = score_against_gt(res['labels'], res['gt'])
@@ -431,7 +431,7 @@ with tab2:
                f"FP {m['fp']} · FN {m['fn']} · F1 {f1txt}")
 
 
-# ── Tab 5 — bring your own image ─────────────────────────────────────
+# Tab 5 — bring your own image
 with tab5:
     st.subheader("Run the pipeline on your own image")
     st.markdown(
@@ -629,7 +629,7 @@ with tab5:
 
         ok, png = cv2.imencode('.png', ann_u)
         if ok:
-            st.download_button("⬇︎ Download the annotated result",
+            st.download_button("Download annotated result",
                                png.tobytes(),
                                file_name=f"occupancy_{up.name.rsplit('.', 1)[0]}.png",
                                mime="image/png")
@@ -643,7 +643,7 @@ with tab5:
                 width='stretch', hide_index=True)
 
 
-# ── Tab 3 — the twist ────────────────────────────────────────────────
+# Tab 3 — the twist
 with tab3:
     st.subheader("My eight-feature cascade versus one single number")
     st.markdown(
@@ -719,7 +719,7 @@ with tab3:
                                       'cascade': '{:.1%}'}), width='stretch')
 
 
-# ── Tab 4 — the story ────────────────────────────────────────────────
+# Tab 4 — the story
 with tab4:
     st.markdown("""
 ### The problem
