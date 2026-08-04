@@ -5,7 +5,9 @@
 # Runtime dependencies — everything src/ and app.py need.
 #
 # This is the file Streamlit Community Cloud installs, so it is kept minimal,
-# headless, and installable on Python 3.10 through 3.13. To also run the
+# headless, and installable *from wheels* on Python 3.10 through 3.14.
+# Streamlit Cloud currently provisions Python 3.14, so every pin below must
+# have a cp314 wheel or the build falls back to compiling from source. To also run the
 # notebooks, install requirements-dev.txt.
 # =============================================================================
 
@@ -31,10 +33,12 @@ pandas==2.2.2 ; python_version < "3.13"
 pandas>=2.2.3,<3 ; python_version >= "3.13"
 
 # --- Visualization ----------------------------------------------------------
-matplotlib==3.9.2                  # publishes cp313 wheels; safe to pin exactly
+matplotlib==3.9.2 ; python_version < "3.13"
+matplotlib>=3.10.6 ; python_version >= "3.13"    # 3.10.6 is the first with cp314 wheels
 
 # --- Configuration ----------------------------------------------------------
-PyYAML==6.0.2                      # publishes cp313 wheels; safe to pin exactly
+PyYAML==6.0.2 ; python_version < "3.13"
+PyYAML>=6.0.3 ; python_version >= "3.13"         # 6.0.3 is the first with cp314 wheels
 
 # --- Interactive app --------------------------------------------------------
 streamlit==1.60.0                  # pure-python wheel; version-independent

@@ -289,30 +289,44 @@ The repository is deploy-ready — no dataset upload, no secrets, no build confi
 - **No dataset needed.** The app reads only the 21 curated frames in `data/samples/` (7.6 MB, committed). The 7.5 GB PKLot download is gitignored and irrelevant to the deployment.
 - **Headless OpenCV.** `requirements.txt` pins `opencv-python-headless`, avoiding the `libGL.so.1` import failure that the standard wheel hits on Streamlit's containers.
 - **Small dependency set.** Six runtime packages, verified to resolve conflict-free in a clean environment. Jupyter and seaborn are quarantined in `requirements-dev.txt`.
-- **Installs on Python 3.10 through 3.13.** `numpy` and `pandas` carry version markers, because the pinned builds publish wheels for cp39-cp312 only. See the troubleshooting note below.
+- **Installs from wheels on Python 3.10 through 3.14.** Streamlit Cloud currently provisions **Python 3.14.6**, so four pins carry version markers — without them the build compiles from source and takes ~45 minutes. See the troubleshooting note below.
 - **Comfortably inside the 1 GB memory limit.** A full 100-bay pass allocates small per-slot crops and takes ~75 ms; results are cached per parameter combination.
 - **Theme committed.** `.streamlit/config.toml` sets the dark theme and disables usage-stat collection, so the deployed app looks identical to local.
 
-#### If the deployment reports `ModuleNotFoundError: No module named 'cv2'`
+#### Troubleshooting the deployment
 
-This error names the wrong package. OpenCV is not missing because it was left out of `requirements.txt` — it is missing because **the entire dependency install aborted before it ran.**
+Streamlit Cloud provisions **Python 3.14.6** (confirmed in the build log: `Using Python 3.14.6 environment`). Four of the development pins publish no cp314 wheel, so the installer falls back to compiling from source — which took **45 minutes** in a real build (`08:17:54 -> 09:03:11`) before failing the app.
 
-`numpy==1.26.4` and `pandas==2.2.2` publish wheels for **cp39-cp312 only**. Streamlit Cloud now defaults new apps to **Python 3.13**, where the installer finds no wheel, falls back to building from source, and fails. That failure aborts the whole transaction, so *nothing* is installed — and the app then dies on the first third-party import in `app.py`, which happens to be `import cv2` on line 14.
+| Package | Dev pin | cp314 wheel? | Minimum with cp314 |
+|---|---|---|---|
+| `numpy` | 1.26.4 | ❌ cp39-cp312 only | **2.1** |
+| `pandas` | 2.2.2 | ❌ cp39-cp312 only | **2.2.3** |
+| `matplotlib` | 3.9.2 | ❌ cp39-cp313 only | **3.10.6** |
+| `PyYAML` | 6.0.2 | ❌ cp38-cp313 only | **6.0.3** |
+| `opencv-python-headless` | 4.10.0.84 | ✅ abi3 — every Python 3.7+ | — |
+| `streamlit` | 1.60.0 | ✅ pure-python wheel | — |
 
-Adding `opencv-python-headless` does not fix this, because it was already pinned.
+**Why the first symptom said `ModuleNotFoundError: No module named 'cv2'`.** It named the wrong package. When a dependency fails to build, the whole install transaction aborts and *nothing* is installed — so the app dies on the first third-party import in `app.py`, which happens to be `import cv2` on line 14. Adding `opencv-python-headless` does not fix it; it was already pinned.
 
-**The fix, already applied here**, is version-conditional pins:
+**The fix, applied here**, makes those four pins conditional so every Python gets a version that has a wheel:
 
 ```text
-numpy==1.26.4    ; python_version <  "3.13"
-numpy>=2.1,<3    ; python_version >= "3.13"
-pandas==2.2.2    ; python_version <  "3.13"
-pandas>=2.2.3,<3 ; python_version >= "3.13"
+numpy==1.26.4     ; python_version <  "3.13"
+numpy>=2.1,<3     ; python_version >= "3.13"
+pandas==2.2.2     ; python_version <  "3.13"
+pandas>=2.2.3,<3  ; python_version >= "3.13"
+matplotlib==3.9.2 ; python_version <  "3.13"
+matplotlib>=3.10.6; python_version >= "3.13"
+PyYAML==6.0.2     ; python_version <  "3.13"
+PyYAML>=6.0.3     ; python_version >= "3.13"
 ```
 
-Verified with `uv`, the resolver Streamlit Cloud uses: Python 3.12 resolves to the exact development pins, Python 3.13 resolves to numpy 2.5.1 / pandas 2.3.3. The pipeline was then run under both and produces **identical numbers** — 63.0% on the default frame, cascade 70.94%, single-feature baseline 82.69%, gap +11.76 pts. The numpy 2 migration is safe for this codebase.
+Verified two ways with `uv`, the resolver Streamlit Cloud uses:
 
-> Optionally also set **Python 3.12** under *Advanced settings* when creating the app, matching the development environment (3.12.3) exactly. With the markers in place this is no longer required — it just removes one variable.
+1. **Wheel-only resolution** (`--only-binary :all:`, which forbids source builds) succeeds on **3.12, 3.13 and 3.14**. No compilation, so builds finish in seconds instead of 45 minutes.
+2. **A real Python 3.14.6 environment** was created and the pipeline run inside it — numpy 2.5.1, pandas 2.3.3, matplotlib 3.11.1, cv2 4.10.0 — producing **identical results** to the 3.12 development environment: 63.0 % on the default frame, cascade 70.94 %, single-feature baseline 82.69 %, gap +11.76 pts. The numpy 1.x -> 2.x migration is safe for this codebase.
+
+> Optionally pin **Python 3.12** under *Advanced settings* when creating the app, matching the development environment (3.12.3) exactly. Note that Streamlit Cloud fixes the Python version at app creation, so changing it means deleting and redeploying — the markers avoid needing to.
 
 > **Free-tier apps sleep after ~7 days of inactivity** and take a few seconds to wake. If you are presenting from the deployed URL, **open it a few minutes beforehand** so it is warm — or just run it locally, which has no cold start.
 
