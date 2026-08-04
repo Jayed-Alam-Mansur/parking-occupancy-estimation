@@ -332,7 +332,9 @@ Verified two ways with `uv`, the resolver Streamlit Cloud uses:
 - **The Act 8 corpus is now computed on click, not on page load.** Streamlit executes *every* tab body on *every* rerun, not just the visible one, so the Twist tab was pushing 21 frames x 100 bays through the pipeline before the first render. Measured on Python 3.14: cold page load dropped from **390 MB / full corpus** to **218 MB / 1.55 s**, with the comparison taking 1.22 s when actually requested. Results are unchanged (+11.76 pts).
 - **`.streamlit/config.toml` no longer sets `[server]` options**, which Streamlit Cloud manages itself.
 
-> Optionally pin **Python 3.12** under *Advanced settings* when creating the app, matching the development environment (3.12.3) exactly. Note that Streamlit Cloud fixes the Python version at app creation, so changing it means deleting and redeploying — the markers avoid needing to.
+**On pinning the Python version.** `runtime.txt` is present (`python-3.12`) but **Streamlit Community Cloud currently ignores it** — a known platform bug ([streamlit/streamlit#15326](https://github.com/streamlit/streamlit/issues/15326)) where the build forces Python 3.14.x regardless of the file. The Python version also [cannot be changed after deployment](https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app/upgrade-python); it is selectable only in *Advanced settings* at app creation, and changing it later means deleting and redeploying.
+
+That is precisely why the version markers above matter: **they are what actually makes the app installable, not the runtime pin.** `runtime.txt` is kept for local tooling and so the build becomes reproducible if the platform bug is fixed. Wheel-only resolution was verified on Python **3.11, 3.12, 3.13 and 3.14** — 3.11/3.12 resolve to the exact development pins (numpy 1.26.4, pandas 2.2.2), 3.13/3.14 to numpy 2.5.1 / pandas 2.3.3.
 
 > **Free-tier apps sleep after ~7 days of inactivity** and take a few seconds to wake. If you are presenting from the deployed URL, **open it a few minutes beforehand** so it is warm — or just run it locally, which has no cold start.
 
