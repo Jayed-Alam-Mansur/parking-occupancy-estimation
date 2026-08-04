@@ -37,3 +37,9 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# ---- AI tools ----
+.claude/
+
+# ---- Stray files ----
+-
