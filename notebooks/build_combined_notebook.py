@@ -1,7 +1,8 @@
-"""Assemble the 9 project notebooks into one presentation notebook.
+"""Assemble the nine project notebooks into a single document.
 
 Preserves every executed output. Removes repeated boilerplate, renumbers
-sections into a single arc, and inserts narrative cells between acts.
+sections into one continuous sequence, and inserts a short introduction to each
+section.
 """
 import base64
 import io
@@ -17,106 +18,93 @@ OUT = "notebooks/00_COMPLETE_PROJECT.ipynb"
 JPEG_ABOVE = 350_000   # recompress embedded PNGs larger than this
 JPEG_Q = 90
 
-# ---------------------------------------------------------------- narrative
+# ---------------------------------------------------------------- front matter
 
-PROLOGUE = r"""# Finding a Parking Space With Nothing but Mathematics
+INTRO = r"""# Automatic Parking Occupancy Estimation using Classical Image Processing
 
-### Automatic Parking Occupancy Estimation using Classical Image Processing
-**Course:** Digital Image Processing  **Author:** Jayed Alam Mansur
+Digital Image Processing course project.
+Author: Jayed Alam Mansur
 
----
+## Objective
 
-## The problem
+Given a single surveillance frame of a parking lot, estimate:
 
-You drive into a 100-space car park. It looks full. You circle it twice, burn
-fuel, block traffic, and eventually find a space that was free the whole time —
-just out of sight behind a van.
+1. the total number of parking spaces, `N`
+2. a per-space `OCCUPIED` / `VACANT` label
+3. the overall occupancy rate, `O% = N_occupied / N * 100`
 
-The industry solution is **one sensor per bay**. A hundred spaces means a
-hundred ultrasonic or magnetometer units to trench in, wire, power, network and
-maintain. It works, and it is expensive.
+The system uses one fixed camera and no per-space hardware sensors.
 
-**This project replaces all hundred of them with one camera and some geometry.**
+## Scope and constraints
 
-## The rules I gave myself
+The implementation uses only classical image processing: homography, CLAHE,
+Otsu and adaptive thresholding, morphological operations, Canny and Sobel
+derived features, and a rule-based decision cascade. No machine learning is
+used. The following are excluded by the project specification and are listed as
+prohibited in `requirements.txt`:
 
-There is a version of this project that takes twenty lines and an afternoon:
-import YOLO, load pretrained weights, draw boxes. It would work. It would also
-teach me nothing about images.
+- tensorflow
+- torch / pytorch
+- keras
+- ultralytics (YOLO)
+- detectron2
+- any pretrained model package
 
-So the constraint here is absolute, and it is written into `requirements.txt`:
+Every threshold and kernel size is set explicitly, and Section 7 reports the
+measurements used to choose them.
 
-> **No TensorFlow. No PyTorch. No Keras. No YOLO. No pretrained models of any
-> kind.**
+## Dataset
 
-Everything you are about to see is built from `cv2` primitives and NumPy
-arrays. Every threshold was chosen by a human who can defend it. There is no
-black box anywhere in this notebook — when the system is wrong, I can point at
-the exact pixel statistic that caused it.
+PKLot, collected at the Federal University of Parana. Approximately 12,400
+images from three parking lots under sunny, cloudy and rainy conditions, with
+per-space polygon annotations and occupancy labels. The annotations are used as
+ground truth for the evaluation in Section 8.
 
-## The three questions the system answers
+## Summary of results
 
-Given a single surveillance frame, it reports:
-
-1. **How many spaces are there?** → `N`
-2. **Which specific bays are occupied?** → a per-bay `OCCUPIED` / `VACANT` label
-3. **How full is the lot?** → `O% = N_occupied / N × 100`
-
-## Where we end up
-
-I will not bury the result. On **11,599 held-out slot samples** from the PKLot
-benchmark:
+Measured on 11,599 held-out space samples:
 
 | Metric | Value |
 |---|---|
-| Accuracy | **74.30 %** |
-| F1 score | **0.7310** |
-| Throughput | **77.33 ms / frame → 12.9 FPS** on a laptop CPU, no GPU |
+| Accuracy | 74.30 % |
+| F1 score | 0.7310 |
+| Processing time | 77.33 ms per frame (12.9 FPS), CPU only |
 
-And one more finding I could have hidden and did not:
+Section 8 also reports a comparison in which a single-feature `edge_density`
+baseline outperforms the full eight-feature cascade on the large evaluation
+set. That result and its likely causes are discussed in Sections 8 and 9.
 
-> **My single simplest feature beat my entire eight-feature system.**
+## Contents
 
-That result, why it happens, and what it taught me is **Act 8**. It is the most
-interesting thing in this project.
-
----
-
-## The route — click any act to jump straight to it
-
-| Act | Question it answers |
+| Section | Topic |
 |---|---|
-| [**1 · Know Your Data**](#act1) | What does the data actually look like? |
-| [**2 · The Camera Is Lying**](#act2) | How do I undo the camera's perspective distortion? |
-| [**3 · Carving 100 Bays**](#act3) | How do I cut the lot into 100 independent bays? |
-| [**4 · Noon vs Dusk**](#act4) | How do I make bays photographed hours apart comparable? |
-| [**5 · Grey to Black-and-White**](#act5) | How do I turn grey pixels into a clean binary decision? |
-| [**6 · Eight Numbers**](#act6) | What eight numbers describe "is there a car here?" |
-| [**7 · Drawing the Line**](#act7) | Where exactly do I draw the yes/no line? |
-| [**8 · The Verdict & the Twist**](#act8) | Does it work on 11,599 samples — and what went wrong? |
-| [**9 · What It Means**](#act9) | What it means, and what I would do next |
+| [1](#sec1) | Dataset and exploratory analysis |
+| [2](#sec2) | Perspective transformation |
+| [3](#sec3) | Region of interest extraction |
+| [4](#sec4) | Preprocessing |
+| [5](#sec5) | Segmentation and morphology |
+| [6](#sec6) | Feature extraction |
+| [7](#sec7) | Threshold calibration and classification |
+| [8](#sec8) | Evaluation |
+| [9](#sec9) | Discussion and conclusion |
 
----
-
-> ℹ️ **About this notebook.** It is a compiled build: the nine development
-> notebooks (`01_explore` → `09_final_report`) merged into one continuous
-> story, with all original executed outputs preserved. Repeated import blocks
-> were collapsed into the single setup cell below. Large photographic outputs
-> were recompressed to JPEG to keep the file openable.
+This notebook is a compiled document: the nine development notebooks
+(`01_explore` through `09_final_report`) merged into one continuous sequence
+with all original executed outputs preserved. The repeated import blocks were
+collapsed into the single setup cell below. Large photographic outputs were
+recompressed to JPEG to reduce file size.
 """
 
-SETUP = '''# Setup — every import used anywhere in this project, in one place
-# -----------------------------------------------------------------
+SETUP = '''# Setup: all imports used in this notebook
 import os, sys, time
 from pathlib import Path
 
-# Run from the project root so every relative path below resolves
+# Run from the project root so relative paths resolve
 if os.path.basename(os.getcwd()) == 'notebooks':
     os.chdir('..')
 sys.path.insert(0, os.path.abspath('.'))
 
 # Third-party: image processing and plotting only
-#    Note what is absent: no tensorflow, no torch, no ultralytics.
 import cv2
 import numpy as np
 import pandas as pd
@@ -152,7 +140,7 @@ from src.visualize    import annotate_parking_image, create_legend, show_and_sav
 
 np.random.seed(42)
 
-# The eight features every parking bay gets reduced to (Act 6)
+# The eight per-space features used in Section 6
 feature_names = ['edge_density', 'foreground_ratio', 'gradient_magnitude',
                  'local_variance', 'largest_component', 'intensity_std',
                  'otsu_separability', 'mean_saturation']
@@ -161,272 +149,194 @@ DATA_ROOT = 'data/raw/PKLot'
 config = load_config('config/config.yaml')
 '''
 
-ACTS = [
-    ("01_explore.ipynb", 1, r"""---
-# Act 1 — Know Your Data Before You Touch It
+SECTIONS = [
+    ("01_explore.ipynb", 1, r"""## Section 1. Dataset and Exploratory Analysis
 
-Every bad computer-vision project starts the same way: someone writes the
-clever algorithm first and looks at the images second.
+This section establishes what the input data looks like before any processing is
+applied. It covers the dataset structure, image properties, the XML annotation
+format, and a quality gate for rejecting unusable frames.
 
-So before a single filter runs, I want to answer plain questions. How many
-frames do I have? What resolution? How different does the same car park look on
-a sunny day versus a rainy one? How are the ground-truth labels stored, and can
-I trust them?
+The PKLot dataset contains approximately 12,400 images from three parking lots
+under three weather conditions, each with per-space polygon annotations and an
+occupancy label. The annotations are used as ground truth in Section 8.
 
-**The dataset:** PKLot, from the Federal University of Paraná — roughly 12,400
-images of three car parks across sunny, cloudy and rainy weather, each with
-per-bay polygon annotations and an occupied/vacant label. That last part is
-what makes honest evaluation possible later.
-
-> **Note:** the sample grid. Sunny frames have brutal shadows that look
-> exactly like dark cars. That single observation drives half the design
-> decisions in Acts 4 and 5.
+One observation from the sample frames affects several later design decisions:
+on sunny frames, cast shadows are dark and roughly car-shaped, which makes them
+difficult to separate from vehicles using intensity alone. This is addressed in
+Sections 4 and 5.
 """),
-    ("02_geometry.ipynb", 2, r"""---
-# Act 2 — The Camera Is Lying To You
+    ("02_geometry.ipynb", 2, r"""## Section 2. Perspective Transformation
 
-Look again at the raw frame from Act 1. Bays near the camera are large
-rectangles. Bays at the far end are small slivers. They are the same physical
-size — the camera's perspective projection is distorting them.
+In the raw camera view, spaces near the camera occupy a larger image area than
+spaces further away, although they are the same physical size. Any feature that
+depends on area or pixel count is therefore influenced by a space's distance
+from the camera rather than by its occupancy state.
 
-This matters enormously. If I measure "how many edge pixels are in this bay?"
-on the raw image, a far bay scores lower than a near bay **for reasons that
-have nothing to do with whether a car is parked there**. Every feature I build
-would be contaminated by position.
-
-The fix is the highest-value step in the entire project. A car park surface is
-**planar**, and any two views of a plane are related by a **homography** — a
-single 3×3 matrix. Find four corresponding points, solve for `H`, and I can
-re-photograph the lot from an imaginary camera hovering directly overhead.
+The parking surface is planar, and two views of a plane are related by a
+homography, a single 3x3 matrix:
 
 $$s\begin{bmatrix}x'\\y'\\1\end{bmatrix} = \mathbf{H}\begin{bmatrix}x\\y\\1\end{bmatrix}$$
 
-> **Note:** the before/after comparison. Bays that were trapezoids
-> become rectangles of near-identical size. That is what makes every later
-> measurement fair.
+Four point correspondences are sufficient to solve for `H`. Applying it produces
+a bird's-eye view in which all spaces have approximately equal size and shape,
+so that subsequent measurements are comparable across the lot.
 """),
-    ("03_roi.ipynb", 3, r"""---
-# Act 3 — Carving the Lot Into 100 Bays
+    ("03_roi.ipynb", 3, r"""## Section 3. Region of Interest Extraction
 
-I now have a clean overhead view. Next I need to stop thinking about "an
-image" and start thinking about **100 independent little problems** — one per
-parking bay.
+The problem is decomposed into 100 independent per-space measurements. The
+annotation polygons are transformed by the same homography `H` so that they align
+with the bird's-eye view, and each space is then cropped and masked.
 
-The annotations give me a polygon per bay, which I push through the same
-homography `H` so they land correctly on the overhead view. Then each bay gets
-cropped and masked.
-
-But there is a trap. Painted bay lines are shared: the polygon for bay 12
-slightly overlaps bay 13. If a large car in bay 13 spills a few pixels into
-bay 12's region, bay 12 reads as occupied when it is empty.
-
-The fix is deliberately unglamorous — **erode each mask inward** and only
-measure the confident core of each bay. I trade a little signal for a lot of
-independence.
-
-> **Note:** the ROI grid. 100 clean, separated, near-identical
-> rectangles. Compare that to the raw frame in Act 1 and the value of the last
-> two acts becomes obvious.
+Adjacent spaces share painted boundary lines, so their polygons overlap
+slightly. A vehicle in one space can therefore contribute pixels to a
+neighbouring space's region and cause a false positive. To avoid this, each mask
+is eroded inward and only the interior of each space is measured. This reduces
+the available signal but makes the per-space measurements independent.
 """),
-    ("04_preprocessing.ipynb", 4, r"""---
-# Act 4 — Making Noon and Dusk Comparable
+    ("04_preprocessing.ipynb", 4, r"""## Section 4. Preprocessing
 
-I have 100 clean bay images. I cannot compare them yet.
+The same empty space photographed under direct sunlight and under cloud cover
+produces substantially different pixel values, so a fixed threshold tuned on one
+condition fails on the other. A single sunny frame also contains both sunlit and
+shaded regions, so one global correction is not sufficient.
 
-A bay photographed in direct sun and the same empty bay photographed under
-cloud produce wildly different pixel values. If my threshold is tuned for one,
-it fails on the other. Worse, a single sunny frame has a bright half and a
-shadowed half — so even *one global correction is not enough*.
+Each space is processed through four steps:
 
-So each bay climbs a four-step ladder:
-
-| Step | Operation | What problem it solves |
+| Step | Operation | Purpose |
 |---|---|---|
-| 1 | **Grayscale** | Colour is not what tells me a car is there. Drop 3 channels to 1. |
-| 2 | **CLAHE** | Uneven lighting. Equalise *per tile*, not globally, so sun-side and shadow-side are fixed independently. |
-| 3 | **Gaussian blur** | High-frequency sensor noise that would become fake edges. |
-| 4 | **Median filter** | Salt-and-pepper speckle from JPEG compression. |
+| 1 | Grayscale conversion | Reduce three channels to one; colour is not required for occupancy |
+| 2 | CLAHE | Equalise contrast per tile, so sunlit and shaded regions are corrected independently |
+| 3 | Gaussian blur | Suppress high-frequency sensor noise that would otherwise produce spurious edges |
+| 4 | Median filter | Remove impulse noise from JPEG compression |
 
-The order is not arbitrary. Median comes *after* Gaussian because impulse noise
-is a rank-order problem, not a convolution problem — you cannot average away a
-single wildly-wrong pixel, but you can rank it out.
-
-> **Note:** the CLAHE histograms. A cramped, bunched-up histogram
-> spreads across the full range — that is contrast being manufactured out of
-> nothing but arithmetic.
+The median filter is applied after the Gaussian blur because impulse noise is a
+rank-order problem rather than a convolution problem: averaging cannot remove a
+single outlying pixel, but a rank filter can.
 """),
-    ("05_segmentation.ipynb", 5, r"""---
-# Act 5 — From Grey to Black-and-White
+    ("05_segmentation.ipynb", 5, r"""## Section 5. Segmentation and Morphology
 
-Now the real decision: which pixels are **car** and which are **asphalt**?
+This section separates vehicle pixels from road surface pixels. Three
+thresholding methods are compared:
 
-I tried three classical thresholding methods and none of them is right alone:
+- Global thresholding, which uses one cutoff for the whole image and fails when
+  illumination varies across the frame.
+- Otsu's method, which selects the cutoff automatically by maximising
+  between-class variance, but assumes a bimodal intensity histogram.
+- Adaptive thresholding, which computes a local cutoff per neighbourhood and
+  handles illumination gradients, but can report texture in an empty space.
 
-- **Global threshold** — one cutoff for everything. Fast, and fails the instant
-  lighting varies.
-- **Otsu** — picks the cutoff automatically by maximising between-class
-  variance. Elegant, but assumes the histogram has two clear humps.
-- **Adaptive** — a different cutoff for every neighbourhood. Handles gradients
-  beautifully, and happily hallucinates texture in a perfectly empty bay.
+The Otsu and adaptive results are fused rather than selecting a single method.
 
-So I **fuse** them rather than pick a winner.
+Shadows remain a difficulty for all intensity-based methods, since a hard shadow
+is dark and car-shaped. Converting to HSV provides an alternative: a shadowed
+region loses value while retaining hue, so shadowed road surface can be
+distinguished from a vehicle by colour rather than by brightness.
 
-Then there is the shadow problem from Act 1. A hard shadow is dark, car-shaped,
-and fools every intensity-based method. The escape is to leave intensity
-behind: convert to **HSV**, where a shadow is a region that lost *value* while
-keeping its *hue* — asphalt in shadow is still asphalt-coloured.
-
-Finally, **morphology** cleans the binary mask: opening removes speckle,
-closing seals holes inside the car body.
-
-> **Note:** the four-way threshold comparison, then the morphology
-> stages. Watch a noisy, scattered mask resolve into one solid car-shaped blob.
+Morphological operations then clean the binary mask. Opening removes isolated
+noise pixels and closing fills interior gaps in the vehicle region.
 """),
-    ("06_features.ipynb", 6, r"""---
-# Act 6 — Eight Numbers That Describe a Parking Bay
+    ("06_features.ipynb", 6, r"""## Section 6. Feature Extraction
 
-Here is the compression step that makes the whole project tractable.
+Each space region contains several thousand pixels. This section reduces it to
+eight scalar features, each with a physical interpretation:
 
-Each bay is thousands of pixels. I reduce it to **eight scalars**, chosen so
-that each one has a physical story I can tell:
-
-| # | Feature | Why a car changes it |
+| # | Feature | Interpretation |
 |---|---|---|
-| 1 | `edge_density` | A car is a box of hard edges. Empty asphalt is smooth. |
-| 2 | `foreground_ratio` | How much of the bay the binary mask marked as "not ground". |
-| 3 | `gradient_magnitude` | Average Sobel response — texture strength. |
-| 4 | `local_variance` | Empty tarmac is uniform; car bodywork is not. |
-| 5 | `largest_component` | One big connected blob = car. Scattered specks = noise. |
-| 6 | `intensity_std` | Cars introduce highlights and shadow together. |
-| 7 | `otsu_separability` | How cleanly the histogram splits into two — a proxy for "is there really an object here?" |
-| 8 | `mean_saturation` | Painted cars are colourful. Asphalt is grey. |
+| 1 | `edge_density` | A vehicle introduces strong edges; empty road surface is smooth |
+| 2 | `foreground_ratio` | Proportion of the space marked as foreground by the binary mask |
+| 3 | `gradient_magnitude` | Mean Sobel response, a measure of texture strength |
+| 4 | `local_variance` | Road surface is uniform; vehicle bodywork is not |
+| 5 | `largest_component` | A vehicle forms one large connected region; noise forms many small ones |
+| 6 | `intensity_std` | Vehicles introduce both highlights and shadow |
+| 7 | `otsu_separability` | How cleanly the intensity histogram separates into two classes |
+| 8 | `mean_saturation` | Painted vehicles are more saturated than grey road surface |
 
-And then the honest question: **are these eight actually any good?** I don't
-guess — I compute the **Fisher discriminant ratio** for each, which measures how
-far apart the occupied and vacant distributions sit relative to their spread:
+The discriminative power of each feature is then quantified using the Fisher
+discriminant ratio, which measures the separation between the occupied and
+vacant distributions relative to their spread:
 
 $$F = \frac{(\mu_{occ} - \mu_{vac})^2}{\sigma_{occ}^2 + \sigma_{vac}^2}$$
 
-High F means the feature separates the two classes cleanly. Low F means it is
-noise wearing a useful-sounding name.
-
-> **Note:** the per-feature histograms, then the Fisher ranking.
-> `edge_density` wins by a wide margin. **Remember that.** It comes back in
-> Act 8 in a way I did not expect.
+A higher value indicates better class separation. The resulting ranking is used
+to set the feature weights in Section 7.
 """),
-    ("07_threshold_tuning.ipynb", 7, r"""---
-# Act 7 — Where Exactly Do We Draw the Line?
+    ("07_threshold_tuning.ipynb", 7, r"""## Section 7. Threshold Calibration and Classification
 
-Eight numbers per bay. One binary answer required. Something has to convert
-one into the other, and this is the part where most projects quietly reach for
-a classifier.
+The eight features must be reduced to a binary label. A trained classifier is
+not used, since the project requires that each decision be traceable to a
+specific measurement. A two-stage cascade is used instead:
 
-I don't — deliberately. A trained model would be a black box, and the entire
-premise here is that every decision must be explainable. So instead:
-
-**A two-stage cascade.**
-
-1. **Fast path.** If `edge_density` is extremely low, the bay is obviously
-   empty — call it and move on. If it is extremely high, it is obviously
-   occupied. Roughly a third of bays are decided here, cheaply.
-2. **Scoring path.** Everything ambiguous gets a weighted vote, where each
-   feature's weight is *its Fisher ratio from Act 6* — features that proved
-   themselves get more say:
+1. Fast path. If `edge_density` is below a lower bound the space is labelled
+   vacant, and if it is above an upper bound the space is labelled occupied.
+   Approximately one third of spaces are resolved at this stage.
+2. Weighted score. Remaining spaces are scored using the Fisher ratios from
+   Section 6 as weights:
 
 $$S = \frac{\sum_k w_k f_k}{\sum_k w_k} \qquad \text{occupied if } S > \tau$$
 
-The remaining question is the value of τ. I don't guess that either — I sweep
-it across its whole range and plot accuracy and F1 as functions of the cutoff,
-then read the optimum off the curve.
-
-> **Note:** the threshold sweep. The curve has a broad, flat peak — the
-> system is not balanced on a knife-edge, which is exactly what you want.
+The decision threshold $\tau$ is selected by sweeping it across its range and
+recording accuracy and F1 at each value, rather than by inspection. The
+resulting curve has a broad maximum, which indicates the configuration is not
+sensitive to small changes in $\tau$.
 """),
-    ("08_evaluation.ipynb", 8, r"""---
-# Act 8 — The Verdict, and the Twist
+    ("08_evaluation.ipynb", 8, r"""## Section 8. Evaluation
 
-Three hand-picked frames prove nothing. This act is where the project either
-holds up or does not.
-
-**The test:** 120 frames sampled evenly across all three weather conditions →
-**11,599 individual bay judgements**, each checked against ground truth. Plus
-per-weather breakdowns, a ranking of the worst-performing bays, and a
+The pipeline is evaluated on 120 frames sampled evenly across all three weather
+conditions, giving 11,599 individual space classifications, each compared
+against the ground-truth annotation. Overall and per-weather confusion matrices
+are reported, along with a ranking of the worst-performing spaces and a
 stage-by-stage timing profile.
 
-The headline: **74.30 % accuracy, 0.7310 F1, 12.9 FPS on CPU.**
+Measured performance: 74.30 % accuracy, 0.7310 F1, and 77.33 ms per frame
+(12.9 FPS) on CPU.
 
----
+Section 8.5 compares the full eight-feature cascade against a baseline that
+thresholds `edge_density` alone, with no weighting or scoring stage. The
+single-feature baseline achieves higher accuracy than the cascade on this
+evaluation set. Three factors are likely to contribute:
 
-### And then the result I did not want
+- The Fisher weights were computed on a small, comparatively clean sample and
+  then applied to a larger and more variable set, so the weighting does not
+  transfer.
+- The seven weaker features are mutually correlated rather than independent, so
+  averaging them does not cancel error and instead reduces the contribution of
+  the one feature that separates the classes well.
+- Each additional feature introduces its own failure cases. `mean_saturation`
+  performs poorly on grey vehicles and `local_variance` performs poorly on wet
+  road surface. The combined score inherits all of them.
 
-Section 6 below compares the full eight-feature cascade against a baseline so
-simple it is almost a joke: **threshold `edge_density` alone. One number. No
-scoring, no weights, no cascade.**
-
-**The one-number baseline wins.**
-
-I could have deleted that comparison. Instead it is the most valuable thing I
-learned, so here is my reading of why it happens:
-
-- **Fisher ratios were measured on a small, clean sample** and then applied to
-  a large, messy one. Weights fitted on easy data do not transfer.
-- **The seven weaker features are correlated with each other**, not
-  independent. Averaging seven noisy, correlated votes does not cancel error —
-  it just dilutes the one feature that actually worked.
-- **Every added feature adds its own failure modes.** `mean_saturation` breaks
-  on grey cars. `local_variance` breaks on wet, textured tarmac. The cascade
-  inherits all of them at once.
-
-The lesson is the one nobody enjoys learning: **more features is not more
-signal.** A complicated system that underperforms its own simplest component
-is telling you something, and the professional move is to listen rather than
-to bury the comparison.
-
-> **Note:** the confusion matrices, the per-weather bars (rainy is the
-> hard case), and Section 6 — the twist.
+The result indicates that increasing the number of features does not necessarily
+increase discriminative power, and that the weighting procedure requires
+revision. This is discussed further in Section 9.
 """),
-    ("09_final_report.ipynb", 9, r"""---
-# Act 9 — What It Means, and What I'd Do Next
+    ("09_final_report.ipynb", 9, r"""## Section 9. Discussion and Conclusion
 
-The pipeline runs end to end. Time to be straight about what was built, what it
-is worth, and where it breaks.
+The pipeline runs end to end using one camera, no per-space sensors, no training
+data and no GPU, at a rate suitable for real-time use on a laptop CPU. Each
+decision can be traced to a named pixel statistic, so any misclassification can
+be attributed to a specific feature.
 
-**What works.** One camera, no sensors, no training data, no GPU, real-time on
-a laptop — and every single decision traceable to a named pixel statistic. Point
-at any wrong answer and I can tell you which feature caused it. Almost no
-learned system can offer that.
+Limitations. Overall accuracy of 74.30 % is a working demonstration rather than
+a deployable system. Rainy frames are the weakest case, since wet road surface
+produces reflections that register as edges. The homography is calibrated
+manually per camera, so a new installation requires new point correspondences.
+As shown in Section 8, the eight-feature cascade is outperformed by a
+single-feature baseline on the full evaluation set.
 
-**What doesn't.** 74.30 % is a working demonstration, not a product. Rainy
-frames are the weak point — wet asphalt reflects, and reflections have edges.
-The homography is hand-calibrated per camera, so a new site means new
-correspondence points. And, as Act 8 showed, my cascade is beaten by its own
-simplest ingredient.
+Proposed further work, in order of expected benefit:
 
-**What I would do next**, in the order I would actually do it:
-
-1. **Ship the baseline.** Edge density alone is more accurate *and* faster.
-   The honest engineering decision is to keep the simple thing.
-2. **Re-fit the weights on the full 11,599 samples**, not the small clean set —
-   test directly whether the cascade was mis-weighted rather than misconceived.
-3. **Drop the features that fail measurably** instead of keeping all eight for
-   symmetry.
-4. **Add temporal smoothing.** Cars do not teleport. A bay that reads occupied
-   for one frame out of thirty is a glitch, and a running vote across frames
-   would erase a whole class of error for almost no compute.
+1. Adopt the single-feature baseline, which is both more accurate and faster on
+   the evaluation set.
+2. Recompute the feature weights on the full 11,599-sample set rather than the
+   smaller sample, to determine whether the cascade is mis-weighted or
+   unsuitable in principle.
+3. Remove the features that measurably reduce accuracy instead of retaining all
+   eight.
+4. Add temporal smoothing. Occupancy changes slowly relative to the frame rate,
+   so a running vote across consecutive frames would suppress isolated
+   single-frame errors at low computational cost.
 """),
 ]
-
-RECAP_TITLES = {
-    1: "Act 1 recap — what the data told us",
-    2: "Act 2 recap — the lot, seen from above",
-    3: "Act 3 recap — 100 independent bays",
-    4: "Act 4 recap — every bay now comparable",
-    5: "Act 5 recap — clean binary masks",
-    6: "Act 6 recap — eight numbers, ranked",
-    7: "Act 7 recap — the line is drawn",
-    8: "Act 8 recap — the honest numbers",
-    9: "Act 9 recap",
-}
 
 # ---------------------------------------------------------------- helpers
 
@@ -456,7 +366,7 @@ def to_jpeg_b64(raw: bytes) -> str:
 
 
 def shrink_outputs(cell):
-    """Recompress heavy photographic PNG outputs to JPEG in place."""
+    """Recompress large photographic PNG outputs to JPEG in place."""
     for o in cell.get("outputs", []):
         d = o.get("data")
         if not d or "image/png" not in d:
@@ -469,7 +379,7 @@ def shrink_outputs(cell):
         try:
             new = to_jpeg_b64(base64.b64decode(b64))
         except Exception as e:                       # pragma: no cover
-            print(f"    ! recompress failed: {e}", file=sys.stderr)
+            print(f"    recompress failed: {e}", file=sys.stderr)
             stats["jpeg_after"] += len(b64)
             continue
         del d["image/png"]
@@ -504,41 +414,43 @@ def is_boilerplate_code(src: str) -> bool:
     return hits / len(body) >= 0.75
 
 
-def renumber(md: str, act: int, counter: list) -> str:
-    """`## 3. Foo` -> `## 2.1 Foo`, renumbered sequentially within the act."""
+def renumber(md: str, sec: int, counter: list) -> str:
+    """`## 3. Foo` -> `## 2.1 Foo`, renumbered sequentially within the section."""
     out = []
     for line in md.splitlines():
         m = re.match(r"^## (\d+)\.\s+(.*)$", line)
         if m:
             counter[0] += 1
-            line = f"## {act}.{counter[0]} {m.group(2)}"
+            line = f"## {sec}.{counter[0]} {m.group(2)}"
         out.append(line)
     return "\n".join(out)
 
 
-def clean_recap(md: str, act: int) -> str:
+def clean_summary(md: str, sec: int, counter: list) -> str:
+    """Number the trailing summary heading and drop forward references."""
     md = re.sub(r"^### Next:.*?(?=^#{1,3} |\Z)", "", md, flags=re.M | re.S)
     md = re.sub(r"^### Next Steps.*?(?=^#{1,3} |\Z)", "", md, flags=re.M | re.S)
-    md = re.sub(r"^## (Phase Summary|Day 2 Complete!).*$",
-                f"## {RECAP_TITLES[act]}", md, flags=re.M)
-    md = re.sub(r"^### Day 2 Complete!.*$", "", md, flags=re.M)
+    if re.search(r"^## Summary\s*$", md, flags=re.M):
+        counter[0] += 1
+        md = re.sub(r"^## Summary\s*$", f"## {sec}.{counter[0]} Summary",
+                    md, flags=re.M)
     return md.rstrip() + "\n"
 
 
 # ---------------------------------------------------------------- assemble
 
 out = nbformat.v4.new_notebook()
-base = nbformat.read(f"{SRC}/{ACTS[0][0]}", as_version=4)
+base = nbformat.read(f"{SRC}/{SECTIONS[0][0]}", as_version=4)
 out.metadata = base.metadata
 
-cells = [new_markdown_cell(PROLOGUE), new_code_cell(SETUP)]
+cells = [new_markdown_cell(INTRO), new_code_cell(SETUP)]
 cells[-1].execution_count = None
 
 dropped = 0
-for fname, act, opener in ACTS:
+for fname, sec, opener in SECTIONS:
     nb = nbformat.read(f"{SRC}/{fname}", as_version=4)
-    # explicit anchor so the prologue's route table can jump here
-    cells.append(new_markdown_cell(f'<a id="act{act}"></a>\n\n' + opener))
+    # anchor target for the contents table
+    cells.append(new_markdown_cell(f'<a id="sec{sec}"></a>\n\n' + opener))
     kept = 0
     counter = [0]
     for idx, c in enumerate(nb.cells):
@@ -550,7 +462,7 @@ for fname, act, opener in ACTS:
             if re.match(r"^##\s+\d+\.\s*Setup", s.strip()):
                 dropped += 1
                 continue
-            s = clean_recap(renumber(s, act, counter), act)
+            s = clean_summary(renumber(s, sec, counter), sec, counter)
             if not s.strip():
                 dropped += 1
                 continue
@@ -565,7 +477,12 @@ for fname, act, opener in ACTS:
             shrink_outputs(c)
             cells.append(c)
             kept += 1
-    print(f"  Act {act}  {fname:28} kept {kept:3} / {len(nb.cells):3}")
+    print(f"  Section {sec}  {fname:28} kept {kept:3} / {len(nb.cells):3}")
+
+# Display tall outputs in full rather than inside a scroll box
+for c in cells:
+    if c.cell_type == "code":
+        c.metadata.setdefault("jupyter", {})["outputs_scrolled"] = False
 
 n = 0
 for c in cells:
@@ -576,11 +493,6 @@ for c in cells:
             if o.get("output_type") == "execute_result":
                 o["execution_count"] = n
 
-# Never let Jupyter bury a tall output inside a small scroll box mid-talk
-for c in cells:
-    if c.cell_type == "code":
-        c.metadata.setdefault("jupyter", {})["outputs_scrolled"] = False
-
 out.cells = cells
 nbformat.validate(out)
 nbformat.write(out, OUT)
@@ -588,7 +500,7 @@ nbformat.write(out, OUT)
 mb = lambda b: b / 1_048_576
 print(f"\n  cells written : {len(cells)}  (dropped {dropped} boilerplate)")
 print(f"  images        : {stats['converted']} recompressed, "
-      f"{stats['reattached']} re-attached to Act 4")
+      f"{stats['reattached']} re-attached to Section 4")
 print(f"  image payload : {mb(stats['png_before']):.2f} MB -> "
       f"{mb(stats['jpeg_after']):.2f} MB")
 print(f"  wrote         : {OUT}")

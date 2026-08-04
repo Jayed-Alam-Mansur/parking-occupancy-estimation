@@ -454,9 +454,9 @@ print(f"\nTest frame accuracy: {test_metrics['accuracy']:.4f}")
 print(f"Test frame F1:       {test_metrics['f1_score']:.4f}")
 
 # %% [markdown]
-# ## Phase Summary
+# ## Summary
 #
-# ### What we accomplished
+# ### Work completed
 # 1. Swept edge density threshold and found optimal operating point
 # 2. Swept weighted score threshold for multi-feature decision boundary
 # 3. Set fast-path thresholds from data percentiles
@@ -466,7 +466,7 @@ print(f"Test frame F1:       {test_metrics['f1_score']:.4f}")
 # 7. Saved tuned `config/thresholds.yaml`
 # 8. End-to-end pipeline test on a fresh frame
 #
-# ### Key results
+# ### Results
 # - The system achieves strong performance using pure classical methods
 # - Edge density alone gets ~80%+ accuracy; multi-feature fusion improves further
 # - The cascade fast-path handles >60% of slots without full scoring

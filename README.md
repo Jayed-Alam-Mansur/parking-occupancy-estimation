@@ -31,27 +31,32 @@
 
 ---
 
-## The System at a Glance
+## Sample Output
 
-A **real, generated output** — the final annotated bird's-eye view for a sunny frame. Green = predicted **VACANT**, red = predicted **OCCUPIED**, and the banner shows live lot statistics. No stock art, no mockup: this is what the pipeline actually produces.
+Annotated bird's-eye view for a sunny frame. Green indicates a predicted vacant
+space, red indicates a predicted occupied space, and the banner reports the lot
+statistics.
 
 <p align="center">
-  <img src="outputs/annotated/sunny_result.png" alt="Annotated parking lot result — sunny frame" width="60%">
+  <img src="outputs/annotated/sunny_result.png" alt="Annotated result, sunny frame" width="60%">
 </p>
 
 ---
 
 ## Project Description
 
-### The problem being solved
+### Problem statement
 
-Drivers circling a full car park looking for a free space waste fuel, time and road capacity. Most commercial solutions solve this with **per-space hardware** — an ultrasonic or magnetometer sensor embedded in every single bay. For a 100-space lot that means 100 sensors to install, power, network and maintain.
+A parking occupancy system must report which spaces in a lot are free. The
+common commercial approach uses one sensor per space, which for a 100-space lot
+requires 100 units to install, power, network and maintain.
 
-This project solves the same problem with **one camera and no sensors**. It takes a single surveillance frame of a parking lot and answers three questions:
+This project estimates the same information from a single surveillance frame
+using one fixed camera and no per-space sensors. For each frame it reports:
 
-1. **How many spaces are there?** (`N` — read from the calibrated slot layout)
-2. **Which specific spaces are occupied and which are free?** (a per-slot `OCCUPIED`/`VACANT` label)
-3. **What is the overall occupancy rate?** (`O% = N_occupied / N × 100`)
+1. the total number of parking spaces, `N`
+2. a per-space `OCCUPIED` or `VACANT` label
+3. the overall occupancy rate, `O% = N_occupied / N * 100`
 
 ### Why it matters
 
@@ -63,9 +68,10 @@ This project solves the same problem with **one camera and no sensors**. It take
 | **Interpretability** | Every decision traces back to a specific pixel statistic. Nothing is a black box. |
 | **Transparency** | When the system is wrong, you can point at exactly which feature caused it. |
 
-### Motivation — why *classical* image processing?
+### Use of classical image processing
 
-This is a **Digital Image Processing course project**, and the constraint is deliberate and explicit. `requirements.txt` carries a hard prohibition list:
+The project specification requires that no machine learning be used.
+`requirements.txt` lists the prohibited packages:
 
 ```text
 # WARNING: The following are STRICTLY PROHIBITED in this project
@@ -77,22 +83,31 @@ This is a **Digital Image Processing course project**, and the constraint is del
 # - Any pretrained model package
 ```
 
-A YOLO model would solve this in twenty lines and teach nothing about images. Building it from `cv2` primitives forces every stage to be understood and justified:
+Building the system from `cv2` primitives requires each stage to be justified
+explicitly:
 
-- **Why** a homography and not a simple crop → because a planar scene under perspective projection *is* a homography.
-- **Why** CLAHE and not global histogram equalisation → because a sunlit lot has sun-side and shadow-side regions that need independent normalisation.
-- **Why** median *after* Gaussian → because impulse noise is a rank-order problem, not a convolution problem.
-- **Why** Canny and not raw Sobel → because non-maximum suppression gives 1-pixel-wide edges, so edge *density* becomes a meaningful normalised ratio.
+- A homography is used rather than a crop, because a planar scene under
+  perspective projection is related to its overhead view by a homography.
+- CLAHE is used rather than global histogram equalisation, because a sunlit lot
+  contains sunlit and shaded regions that require independent normalisation.
+- The median filter is applied after the Gaussian blur, because impulse noise is
+  a rank-order problem rather than a convolution problem.
+- Canny is used rather than raw Sobel, because non-maximum suppression produces
+  one-pixel-wide edges, which makes edge density a meaningful normalised ratio.
 
-Every parameter in this project was chosen by a human who can explain it, and the entire decision rule fits on one page.
+### Performance
 
-### Real-world impact
+The pipeline runs in 77.33 ms per frame (12.9 FPS) for a 100-space lot on a
+laptop CPU with no GPU, which is sufficient for a live occupancy display.
 
-The system is **real-time capable on a laptop CPU**: measured **77.33 ms per frame (12.9 FPS)** for a full 100-slot lot, with no GPU. A single mid-range machine could serve several camera feeds at a practical update rate for a live "spaces available" sign, a mobile app, or a municipal open-data feed.
+### Scope
 
-### Honest scope statement
-
-This README documents **what the code actually does and what it actually measured** — not what it aspires to. The system reaches **74.30 % accuracy / 0.7310 F1** on 11,599 held-out slot samples. That is a working demonstration of the classical pipeline, **not** a production-grade detector, and a well-known result in this project is that a **single-feature edge-density baseline actually outperforms the full 8-feature cascade** on the large evaluation set. That finding, its numbers, and its likely cause are all documented in [Results](#results) and [Challenges Faced](#challenges-faced) rather than hidden.
+This README reports measured results. The system reaches 74.30 % accuracy and
+0.7310 F1 on 11,599 held-out space samples. It is a working demonstration of the
+classical pipeline rather than a production detector. A single-feature
+edge-density baseline outperforms the full eight-feature cascade on the large
+evaluation set; that result and its likely causes are reported in
+[Results](#results) and [Challenges Faced](#challenges-faced).
 
 ---
 
@@ -208,107 +223,125 @@ All images below are **real generated outputs** committed in `outputs/`. Nothing
 
 ---
 
-## Start Here — Three Ways to Read This Project
+## Project Files
 
-Development happened across nine sequential notebooks. For reading, presenting or grading, **use the combined build instead** — the same work assembled into one continuous narrative with every executed output preserved.
+Development was carried out across nine sequential notebooks. A combined
+notebook merges them into one document with all executed outputs preserved.
 
-| I want to… | Open this | Notes |
-|---|---|---|
-| **Read the whole project as one story** | [`notebooks/00_COMPLETE_PROJECT.ipynb`](notebooks/00_COMPLETE_PROJECT.ipynb) | 160 cells · 9 acts · all 120 outputs and 33 figures intact. Clickable act navigation in the prologue. |
-| **Present it live** | [`docs/presentation/parking-occupancy-presentation.html`](docs/presentation/parking-occupancy-presentation.html) | Standalone, self-contained. No Jupyter, no kernel, no way to wipe an output mid-talk. Download and double-click. |
-| **Follow the talk track** | [`docs/presentation/PRESENTATION_SCRIPT.md`](docs/presentation/PRESENTATION_SCRIPT.md) | Act-by-act speaker script, prepared Q&A, and a timing card with cut markers for a 7-minute version. |
-| **Demo the app live** | [`docs/presentation/STREAMLIT_DEMO_SCRIPT.md`](docs/presentation/STREAMLIT_DEMO_SCRIPT.md) | Six-minute demo run for `app.py`: which sliders to break, measured before/after numbers, and the landmines to avoid on stage. |
-| **Play with it live** | [`app.py`](app.py) — `streamlit run app.py` | Interactive explorer. Move a slider, watch the pipeline recompute. See below. |
-| **Audit the original work** | [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb) → [`09_final_report.ipynb`](notebooks/09_final_report.ipynb) | The nine development notebooks, untouched. These remain the source of truth. |
+| File | Description |
+|---|---|
+| [`notebooks/00_COMPLETE_PROJECT.ipynb`](notebooks/00_COMPLETE_PROJECT.ipynb) | All nine notebooks combined into one document: 160 cells, 9 sections, 120 outputs and 32 figures. Contents table links to each section. |
+| [`notebooks/01_explore.ipynb`](notebooks/01_explore.ipynb) to [`09_final_report.ipynb`](notebooks/09_final_report.ipynb) | The nine development notebooks. These are the source of the combined document. |
+| [`docs/presentation/parking-occupancy-presentation.html`](docs/presentation/parking-occupancy-presentation.html) | Standalone HTML export of the combined notebook. Opens in any browser without Jupyter. |
+| [`app.py`](app.py) | Streamlit interface to the pipeline. See below. |
+| [`notebooks/build_combined_notebook.py`](notebooks/build_combined_notebook.py) | Script that generates the combined notebook from the nine sources. |
 
-### The interactive explorer
+### Streamlit application
 
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Runs entirely on the **21 curated frames committed to `data/samples/`** — the 7.5 GB PKLot download is *not* required. Every stage calls the same `src/` functions the notebooks call; nothing is reimplemented.
+The application runs on the 21 sample frames committed to `data/samples/`, so
+the full PKLot download is not required. Each stage calls the same `src/`
+functions used by the notebooks.
 
-| Tab | What it does |
+| Tab | Contents |
 |---|---|
-| **Pipeline Explorer** | Original vs bird's-eye view side by side, then one bay walked through all nine stages — ROI → grayscale → CLAHE → Gaussian → median → Otsu → adaptive → fused → morphology — ending in its eight features, weighted contributions and verdict against ground truth. |
-| **Whole Lot** | All 100 bays annotated green/red with live occupancy %, accuracy against ground truth, frame time, and a false-occupied / false-vacant split. |
-| **Your Own Image** | Upload any parking-lot photo and run the identical pipeline on it. See below. |
-| **The Twist (Act 8)** | The Act 8 finding, live: sweep a single `edge_density` cutoff and watch the one-number baseline beat the full eight-feature cascade. |
-| **The Story** | The nine-act narrative and headline results, for reference while demoing. |
+| Pipeline Stages | Original and corrected views side by side, then one space processed through all stages: ROI, grayscale, CLAHE, Gaussian blur, median filter, Otsu, adaptive threshold, fusion and morphology, followed by its eight features, weighted contributions and predicted label. |
+| Full Lot Result | All 100 spaces annotated, with occupancy rate, accuracy against ground truth, frame time, and the false-occupied and false-vacant counts. |
+| Process New Image | Upload an image and run the same pipeline on it. See below. |
+| Feature Comparison | Sweeps a single `edge_density` threshold and compares the resulting accuracy against the eight-feature cascade. |
+| Project Summary | Objective, method, results and further work. |
 
-#### Running it on a new image
+Fourteen parameters are exposed in the sidebar: CLAHE clip limit and tile grid,
+Gaussian and median kernel sizes, adaptive block size and constant, morphological
+opening and closing kernels, core-mask erosion, Canny bounds, and the three
+decision thresholds. All are initialised to the tuned values in `config/`, so the
+application reproduces the stored configuration until a parameter is changed.
 
-The **Your Own Image** tab takes an upload and pushes it through the same stages. Two things must be true before any number means anything, and the tab makes both explicit rather than assuming them:
+Measured parameter sensitivity across all 21 sample frames: setting the core-mask
+erosion to zero reduces accuracy by 7.05 points, increasing the morphological
+opening kernel from 3 to 7 reduces it by 10.01 points, and disabling both
+denoising filters reduces it by 10.91 points.
 
-**1 · Perspective correction.** The committed homography was solved on 1280×720 frames from PKLot `parking2`. The tab detects your resolution and reacts:
+### Processing a new image
 
-| Your image | What happens |
+The Process New Image tab accepts an uploaded image and runs the same pipeline on
+it. Two conditions must hold for the results to be valid.
+
+Perspective correction. The stored homography was solved on 1280x720 frames from
+PKLot `parking2`. The tab detects the uploaded resolution and responds as
+follows:
+
+| Uploaded image | Behaviour |
 |---|---|
-| Exactly 1280×720 | Committed homography used as-is |
-| Different size, **same** aspect ratio | Calibration points are **rescaled automatically**. Verified to fully recover accuracy — a 1920×1080 copy of a sample frame scores 29.3 % with the raw homography and **56.6 % once rescaled**, identical to native resolution |
-| Different aspect ratio | Blocked with an error; recalibrate instead |
-| A different camera entirely | Choose **Calibrate for this image** and set the four ground-plane corners yourself |
+| Exactly 1280x720 | Stored homography used unchanged |
+| Different size, same aspect ratio | Calibration points rescaled automatically. A 1920x1080 copy of a sample frame scores 29.3 % with the unscaled homography and 56.6 % after rescaling, matching the native-resolution result |
+| Different aspect ratio | Rejected; manual calibration required |
+| Different camera | Four ground-plane corner points specified manually |
 
-**2 · Bay layout.** Where the parking bays are:
+Space layout. Three options are available:
 
-| Option | Use when |
+| Option | Applicable when |
 |---|---|
-| **Committed `slots.json`** | Same camera — the 100 hand-calibrated bays from Act 3 |
-| **Upload matching PKLot XML** | You have annotations. Supplies the polygons *and* ground truth, so the tab scores accuracy, F1 and the false-occupied / false-vacant split |
-| **Generate a regular grid** | Unknown lot with no annotations. Bays are *assumed* evenly spaced — check the overlay before trusting the count |
+| Stored `slots.json` | Same camera; uses the 100 calibrated spaces from Section 3 |
+| Uploaded PKLot XML | Annotations available. Provides both polygons and ground truth, so accuracy, F1 and the error split are computed |
+| Generated grid | No annotations available. Spaces are assumed evenly spaced and the overlay must be checked visually |
 
-**The alignment guard.** Before reporting anything, the tab counts how many bays sit on real image content. This is deliberately not a bounds check: `warpPerspective` always returns the full BEV canvas, so a mismatched homography still leaves every bay technically "in bounds" — just sitting over black padding where no source pixel mapped. Measuring non-black coverage instead catches the mismatches that a bounds check waves through (a wrongly-scaled image drops to 32 % of bays usable, a cropped one to 54 %). Below 80 %, the tab refuses to present the occupancy figure as meaningful.
+Alignment check. Before reporting occupancy, the tab counts how many spaces fall
+on valid image content. A bounds check is not sufficient, because
+`warpPerspective` always returns the full bird's-eye-view canvas, so a mismatched
+homography still places every space inside the canvas over black padding. The
+check measures the non-black fraction of each space instead. Measured values: a
+correctly matched 1280x720 frame gives 100 of 100 spaces usable, a wrongly scaled
+640x360 frame gives 32 of 100, a half-width crop gives 54 of 100, and a portrait
+720x1280 frame gives 64 of 100. Below 80 % the occupancy figures are reported as
+invalid.
 
-Also reused here: **Act 1's quality gate**, reporting brightness and Laplacian-variance sharpness, warning when an image is too dark or too blurry to trust. Results download as an annotated PNG, with a per-bay table of all eight features and verdicts.
+The quality gate from Section 1 is also applied to the uploaded image, reporting
+mean brightness and Laplacian variance. Results can be downloaded as an annotated
+PNG, with a per-space table of all eight features and predicted labels.
 
-Fourteen sliders in the sidebar expose every parameter the pipeline uses — CLAHE clip limit, kernel sizes, adaptive block size, Canny bounds, morphology kernels, core-mask erosion and all three decision thresholds. **They start at the exact tuned values in `config/`**, so the app reproduces the committed configuration until you deliberately break it.
+### Deployment
 
-> **Why this is worth demoing.** Drop the core-mask erosion to zero and watch neighbouring cars leak across shared painted lines — accuracy falls **7.05 points** and mean edge density *rises*, because it is now measuring the neighbour's car. Push the morphological opening kernel from 3 to 7 and watch it eat the cars themselves (**−10.01 points**). The failure modes argued for in the write-up become something you can *show* rather than assert. Measured numbers and a demo run-sheet are in [`STREAMLIT_DEMO_SCRIPT.md`](docs/presentation/STREAMLIT_DEMO_SCRIPT.md).
+The repository can be deployed on Streamlit Community Cloud without additional
+configuration.
 
-### Deploying to Streamlit Community Cloud (free)
+1. Sign in at [share.streamlit.io](https://share.streamlit.io) with GitHub.
+2. Create a new app with repository `Jayed-Alam-Mansur/parking-occupancy-estimation`,
+   branch `main` and main file path `app.py`.
+3. Deploy. The build installs `requirements.txt`.
 
-The repository is deploy-ready — no dataset upload, no secrets, no build config.
+The application requires no dataset upload: it reads only the 21 sample frames in
+`data/samples/` (7.6 MB). `requirements.txt` specifies `opencv-python-headless`,
+since the standard `opencv-python` wheel links against `libGL.so.1`, which is not
+present in the deployment container. `packages.txt` requests the `libgl1` and
+`libglib2.0-0` system packages. `.streamlit/config.toml` sets the theme.
 
-1. Go to **[share.streamlit.io](https://share.streamlit.io)** and sign in with GitHub.
-2. **New app → Deploy a public app from a repo**, then set:
+#### Python version and dependency wheels
 
-   | Field | Value |
-   |---|---|
-   | Repository | `Jayed-Alam-Mansur/parking-occupancy-estimation` |
-   | Branch | `main` |
-   | Main file path | `app.py` |
-   | Python version | `3.12` |
+Streamlit Community Cloud currently provisions Python 3.14.6. Four of the
+development pins publish no cp314 wheel, so the installer would otherwise compile
+them from source, which took 45 minutes in one observed build before failing.
 
-3. Click **Deploy**. First build installs `requirements.txt` (~1 min) and the app comes up at
-   `https://<your-subdomain>.streamlit.app`.
-
-**Why it works on the free tier:**
-
-- **No dataset needed.** The app reads only the 21 curated frames in `data/samples/` (7.6 MB, committed). The 7.5 GB PKLot download is gitignored and irrelevant to the deployment.
-- **Headless OpenCV.** `requirements.txt` pins `opencv-python-headless`, avoiding the `libGL.so.1` import failure that the standard wheel hits on Streamlit's containers.
-- **Small dependency set.** Six runtime packages, verified to resolve conflict-free in a clean environment. Jupyter and seaborn are quarantined in `requirements-dev.txt`.
-- **Installs from wheels on Python 3.10 through 3.14.** Streamlit Cloud currently provisions **Python 3.14.6**, so four pins carry version markers — without them the build compiles from source and takes ~45 minutes. See the troubleshooting note below.
-- **Comfortably inside the 1 GB memory limit.** A full 100-bay pass allocates small per-slot crops and takes ~75 ms; results are cached per parameter combination.
-- **Theme committed.** `.streamlit/config.toml` sets the dark theme and disables usage-stat collection, so the deployed app looks identical to local.
-
-#### Troubleshooting the deployment
-
-Streamlit Cloud provisions **Python 3.14.6** (confirmed in the build log: `Using Python 3.14.6 environment`). Four of the development pins publish no cp314 wheel, so the installer falls back to compiling from source — which took **45 minutes** in a real build (`08:17:54 -> 09:03:11`) before failing the app.
-
-| Package | Dev pin | cp314 wheel? | Minimum with cp314 |
+| Package | Development pin | cp314 wheel | Minimum version with cp314 |
 |---|---|---|---|
-| `numpy` | 1.26.4 | ❌ cp39-cp312 only | **2.1** |
-| `pandas` | 2.2.2 | ❌ cp39-cp312 only | **2.2.3** |
-| `matplotlib` | 3.9.2 | ❌ cp39-cp313 only | **3.10.6** |
-| `PyYAML` | 6.0.2 | ❌ cp38-cp313 only | **6.0.3** |
-| `opencv-python-headless` | 4.10.0.84 | ✅ abi3 — every Python 3.7+ | — |
-| `streamlit` | 1.60.0 | ✅ pure-python wheel | — |
+| `numpy` | 1.26.4 | No (cp39 to cp312) | 2.1 |
+| `pandas` | 2.2.2 | No (cp39 to cp312) | 2.2.3 |
+| `matplotlib` | 3.9.2 | No (cp39 to cp313) | 3.10.6 |
+| `PyYAML` | 6.0.2 | No (cp38 to cp313) | 6.0.3 |
+| `opencv-python-headless` | 4.10.0.84 | Yes (abi3) | not applicable |
+| `streamlit` | 1.60.0 | Yes (pure Python) | not applicable |
 
-**Why the first symptom said `ModuleNotFoundError: No module named 'cv2'`.** It named the wrong package. When a dependency fails to build, the whole install transaction aborts and *nothing* is installed — so the app dies on the first third-party import in `app.py`, which happens to be `import cv2` on line 14. Adding `opencv-python-headless` does not fix it; it was already pinned.
+When the dependency install fails, no packages are installed and the application
+raises `ModuleNotFoundError: No module named 'cv2'` on the first third-party
+import. The reported missing module is therefore a symptom of the failed install
+rather than its cause.
 
-**The fix, applied here**, makes those four pins conditional so every Python gets a version that has a wheel:
+These four pins are made conditional on the Python version so that every
+interpreter resolves to a version with a published wheel:
 
 ```text
 numpy==1.26.4     ; python_version <  "3.13"
@@ -321,45 +354,27 @@ PyYAML==6.0.2     ; python_version <  "3.13"
 PyYAML>=6.0.3     ; python_version >= "3.13"
 ```
 
-Verified two ways with `uv`, the resolver Streamlit Cloud uses:
+Wheel-only resolution was verified with `uv` on Python 3.11, 3.12, 3.13 and 3.14.
+Python 3.11 and 3.12 resolve to the exact development pins; 3.13 and 3.14 resolve
+to numpy 2.5.1 and pandas 2.3.3. The pipeline was run in a Python 3.14.6
+environment and produced results identical to the 3.12 development environment.
 
-1. **Wheel-only resolution** (`--only-binary :all:`, which forbids source builds) succeeds on **3.12, 3.13 and 3.14**. No compilation, so builds finish in seconds instead of 45 minutes.
-2. **A real Python 3.14.6 environment** was created and the pipeline run inside it — numpy 2.5.1, pandas 2.3.3, matplotlib 3.11.1, cv2 4.10.0 — producing **identical results** to the 3.12 development environment: 63.0 % on the default frame, cascade 70.94 %, single-feature baseline 82.69 %, gap +11.76 pts. The numpy 1.x -> 2.x migration is safe for this codebase.
+`runtime.txt` requests Python 3.12, but Streamlit Community Cloud currently
+ignores this file
+([streamlit/streamlit#15326](https://github.com/streamlit/streamlit/issues/15326)).
+The Python version also
+[cannot be changed after deployment](https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app/upgrade-python);
+it is selectable only in the advanced settings when the app is created. The
+version markers above are therefore the mechanism that makes the application
+installable, not the runtime file.
 
-**Also applied as defensive measures**, since the container is not observable from outside:
-
-- **`packages.txt`** declares the apt packages `libgl1` and `libglib2.0-0`. Strictly, `opencv-python-headless` should not need `libGL` — that is the point of the headless build — but the two packages cost nothing to install and eliminate a whole class of Linux shared-library import failure.
-- **The Act 8 corpus is now computed on click, not on page load.** Streamlit executes *every* tab body on *every* rerun, not just the visible one, so the Twist tab was pushing 21 frames x 100 bays through the pipeline before the first render. Measured on Python 3.14: cold page load dropped from **390 MB / full corpus** to **218 MB / 1.55 s**, with the comparison taking 1.22 s when actually requested. Results are unchanged (+11.76 pts).
-- **`.streamlit/config.toml` no longer sets `[server]` options**, which Streamlit Cloud manages itself.
-
-**On pinning the Python version.** `runtime.txt` is present (`python-3.12`) but **Streamlit Community Cloud currently ignores it** — a known platform bug ([streamlit/streamlit#15326](https://github.com/streamlit/streamlit/issues/15326)) where the build forces Python 3.14.x regardless of the file. The Python version also [cannot be changed after deployment](https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app/upgrade-python); it is selectable only in *Advanced settings* at app creation, and changing it later means deleting and redeploying.
-
-That is precisely why the version markers above matter: **they are what actually makes the app installable, not the runtime pin.** `runtime.txt` is kept for local tooling and so the build becomes reproducible if the platform bug is fixed. Wheel-only resolution was verified on Python **3.11, 3.12, 3.13 and 3.14** — 3.11/3.12 resolve to the exact development pins (numpy 1.26.4, pandas 2.2.2), 3.13/3.14 to numpy 2.5.1 / pandas 2.3.3.
-
-> **Free-tier apps sleep after ~7 days of inactivity** and take a few seconds to wake. If you are presenting from the deployed URL, **open it a few minutes beforehand** so it is warm — or just run it locally, which has no cold start.
-
-### The nine acts
-
-| Act | Title | Answers |
-|---|---|---|
-| **1** | Know Your Data Before You Touch It | What does the data actually look like? |
-| **2** | The Camera Is Lying To You | How do I undo perspective distortion? |
-| **3** | Carving the Lot Into 100 Bays | How do I get 100 independent measurements? |
-| **4** | Making Noon and Dusk Comparable | How do I normalise across lighting? |
-| **5** | From Grey to Black-and-White | How do I get a clean binary mask? |
-| **6** | Eight Numbers That Describe a Parking Bay | What features actually separate the classes? |
-| **7** | Where Exactly Do We Draw the Line? | How is the decision made without ML? |
-| **8** | **The Verdict, and the Twist** | Does it work on 11,599 samples — and what went wrong? |
-| **9** | What It Means, and What I'd Do Next | Honest limitations and next steps |
-
-> **How the combined notebook was built.** [`notebooks/build_combined_notebook.py`](notebooks/build_combined_notebook.py) merges the nine sources: it collapses nine duplicated import blocks into one setup cell, renumbers sections into a single arc, strips the `Next: Notebook NN` forward-pointers, re-attaches Act 4's four figures (which the `Agg` backend had written to disk instead of displaying inline), and recompresses photographic PNG outputs to JPEG — **27.15 MB → 6.04 MB**. The only outputs lost were docstring echoes and `Configuration loaded successfully!` chatter. Re-run it any time to regenerate.
-
----
+Free-tier applications become inactive after about seven days without use and
+take a few seconds to restart.
 
 ## Table of Contents
 
-- [Start Here — Three Ways to Read This Project](#start-here--three-ways-to-read-this-project)
-- [The System at a Glance](#the-system-at-a-glance)
+- [Project Files](#project-files)
+- [Sample Output](#sample-output)
 - [Project Description](#project-description)
 - [Features](#features)
 - [Project Demo](#project-demo)
@@ -2454,7 +2469,7 @@ All 29 figures in `outputs/screenshots/` plus 3 in `outputs/annotated/`, in gene
 |--------|------|---------------|
 | Perspective illustration | `03_perspective_illustration.png` | The source frame annotated with "NEAR slots (large in pixels)" / "FAR slots (small in pixels)" and cyan converging vanishing lines. |
 | Corner points | `04_corner_points.png` | The four correspondence points P1–P4 with a yellow quadrilateral connecting them. |
-| BEV comparison | `04_bev_comparison.png` | **The money shot** — original perspective beside the warped bird's-eye view. |
+| BEV comparison | `04_bev_comparison.png` | Original perspective beside the warped bird's-eye view. |
 | BEV validation | `04_bev_validation.png` | Left: sorted slot areas, original vs. BEV. Right: BEV area histogram with the mean marked. This is the figure that reveals the ratio did not improve. |
 | All slots overlay | `05_all_slots_overlay.png` | All 100 polygons pushed through `H` and drawn on the BEV, colour-coded by ground truth. Confirms `perspectiveTransform` correctness. |
 

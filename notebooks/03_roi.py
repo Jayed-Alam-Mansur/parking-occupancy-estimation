@@ -108,14 +108,14 @@ if frames and H is not None:
     print(f"Transformed {len(bev_slots)} slots to BEV coordinates.")
 
 # %% [markdown]
-# ## 4. The "Overlap Problem" and Core Masks
+# ## 4. Mask overlap and core masks
 #
-# ### The Problem
+# ### Background
 # Even in BEV, cars slightly overlap into adjacent slots due to their height
 # (especially large SUVs/trucks). If we just take a rectangular bounding box,
 # we will include pieces of neighbouring cars, confusing our classifier.
 #
-# ### The Solution
+# ### Approach
 # 1. **Bounding Box Patch:** Extract a rectangular crop to work on (faster).
 # 2. **Full Polygon Mask:** Zero out anything outside the true slot polygon.
 # 3. **Eroded Core Mask:** Shrink the polygon inwards by a few pixels.
@@ -195,16 +195,16 @@ if frames and H is not None:
     print(f"Successfully re-loaded {len(loaded_slots)} slots!")
 
 # %% [markdown]
-# ## Phase Summary
+# ## Summary
 #
-# ### What we accomplished
+# ### Work completed
 # 1. Transformed original slot polygons into BEV coordinates
 # 2. Built extraction logic for bounding box + binary mask
 # 3. Implemented the **eroded core mask** to solve adjacent-car overlap
 # 4. Visualized the ROI extraction pipeline
 # 5. Saved canonical BEV slot coordinates to `config/slots.json`
 #
-# ### Key insights
+# ### Observations
 # - The eroded mask is a critical classical technique to isolate the signal.
 # - Without it, a white SUV parked next to an empty slot might cause the empty slot to look occupied.
 #

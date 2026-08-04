@@ -1,6 +1,4 @@
-# =============================================================================
 # evaluate.py - Performance Evaluation
-# =============================================================================
 """
 Compute performance metrics for the occupancy estimation system.
 

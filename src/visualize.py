@@ -1,6 +1,4 @@
-# =============================================================================
 # visualize.py - Drawing, Annotation & Dashboard
-# =============================================================================
 """
 Visualization functions for presenting results.
 

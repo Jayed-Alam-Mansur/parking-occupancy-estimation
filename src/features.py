@@ -1,6 +1,4 @@
-# =============================================================================
 # features.py - Feature Extraction
-# =============================================================================
 """
 Extract numerical features from parking slot images for occupancy estimation.
 

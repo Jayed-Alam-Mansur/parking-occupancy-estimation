@@ -427,9 +427,9 @@ for weather in ['sunny', 'cloudy', 'rainy']:
 print("\nDone! Annotated results saved to outputs/annotated/")
 
 # %% [markdown]
-# ## Phase Summary
+# ## Summary
 #
-# ### What we accomplished
+# ### Work completed
 # 1. Evaluated pipeline on 100+ frames across sunny/cloudy/rainy
 # 2. Generated per-weather confusion matrices
 # 3. Compared single-feature vs multi-feature cascade

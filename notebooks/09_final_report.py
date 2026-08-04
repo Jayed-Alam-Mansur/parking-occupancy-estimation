@@ -210,7 +210,7 @@ show_and_save_fig(fig, 'Pipeline Results Across Weather Conditions',
 # %% [markdown]
 # ## 5. The 8-Feature Vector — Design Rationale
 #
-# ### Feature Selection Philosophy
+# ### Feature selection
 # Each feature captures a **different physical signal** that distinguishes
 # a car from empty asphalt:
 #
@@ -225,7 +225,7 @@ show_and_save_fig(fig, 'Pipeline Results Across Weather Conditions',
 # | Otsu Separability | Cars create bimodal histograms | Between-class variance |
 # | Mean Saturation | Cars have coloured paint | HSV colour space |
 #
-# ### Decision Cascade — Not Machine Learning
+# ### Decision cascade
 # Our classifier uses a **transparent, interpretable rule**:
 # 1. **Fast path**: extreme edge density → instant decision
 # 2. **Weighted score**: $S = \sum w_k f_k / \sum w_k$ where weights come from Fisher ratios
@@ -292,9 +292,9 @@ for k, v in sorted_w:
 #
 # This project demonstrates that **classical image processing techniques**
 # can achieve practical parking occupancy estimation without any machine
-# learning. The key insights are:
+# learning. The main findings are:
 #
-# 1. **Perspective correction is the highest-value step** — it normalises
+# 1. **Perspective correction has the largest single effect** — it normalises
 #    slot sizes so one threshold set works everywhere
 # 2. **Multi-feature fusion outperforms single features** — combining
 #    8 complementary features with Fisher-derived weights gives robust

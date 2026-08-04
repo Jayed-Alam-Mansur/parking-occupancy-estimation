@@ -1,6 +1,4 @@
-# =============================================================================
 # io_utils.py - I/O Utilities & PKLot Dataset Parser
-# =============================================================================
 """
 Handles loading frames, parsing PKLot XML annotations, quality gates,
 and ground truth export.

@@ -73,7 +73,7 @@ config = load_config('config/config.yaml')
 # classification. It was collected by researchers at the Federal University of
 # Paraná (UFPR) in Brazil.
 #
-# **Key facts:**
+# **Dataset properties:**
 # - **3 camera locations:** UFPR04, UFPR05, PUCPR
 # - **3 weather conditions:** Sunny, Cloudy, Rainy
 # - **~12,400 images** total (695,899 individual slot samples)
@@ -142,9 +142,9 @@ for w in WEATHERS:
 # %% [markdown]
 # ## 4. Sample Frame Grid
 #
-# ### Why this matters
+# ### Rationale
 # Before any processing, we must understand what our data looks like.
-# Key observations:
+# Observations:
 # - **Sunny:** Strong shadows, high contrast, saturated colours
 # - **Cloudy:** Diffuse lighting, lower contrast, uniform illumination
 # - **Rainy:** Wet reflections, reduced visibility, darker overall
@@ -190,9 +190,9 @@ else:
 # %% [markdown]
 # ## 5. Histogram Analysis
 #
-# ### Why we need histograms
+# ### Rationale
 # Histograms reveal the intensity distribution of our images.
-# Key insights for our pipeline:
+# Implications for the pipeline:
 # - **Bimodality:** If a histogram has two peaks, Otsu thresholding
 #   will work well
 # - **Dynamic range:** Tells us if CLAHE is needed
@@ -314,7 +314,7 @@ if frames:
 # %% [markdown]
 # ## 8. Slot Size Analysis (Original Image Coordinates)
 #
-# ### Why this matters
+# ### Rationale
 # In the original perspective view, slots closer to the camera appear
 # MUCH LARGER than slots far away. This is the fundamental problem
 # that homography/BEV rectification solves (Phase 3-4).
@@ -420,9 +420,9 @@ if frames:
         print(f"  {w}: {count}")
 
 # %% [markdown]
-# ## Phase Summary
+# ## Summary
 #
-# ### What we accomplished
+# ### Work completed
 # 1. Loaded and explored the PKLot dataset structure
 # 2. Visualized sample frames across sunny/cloudy/rainy conditions
 # 3. Analyzed intensity distributions (histograms)
@@ -432,7 +432,7 @@ if frames:
 # 7. Exported ground truth CSV
 # 8. Curated ~20 sample frames
 #
-# ### Key observations
+# ### Observations
 # - Slot areas vary by **up to 8x** between near and far rows
 #   → Perspective correction is MANDATORY for a single threshold set
 # - Sunny frames have **strong shadows** that will be our biggest challenge

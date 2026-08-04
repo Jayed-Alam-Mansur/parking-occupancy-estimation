@@ -1,6 +1,4 @@
-# =============================================================================
 # geometry.py - Camera Geometry & Perspective Transformation
-# =============================================================================
 """
 Handles camera geometry concepts and perspective transformation.
 

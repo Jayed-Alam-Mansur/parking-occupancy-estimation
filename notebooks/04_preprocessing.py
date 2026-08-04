@@ -66,11 +66,11 @@ print(f"Loaded {len(bev_slots)} BEV slots")
 # %% [markdown]
 # ## 2. Why Preprocessing?
 #
-# ### The Problem
+# ### Background
 # Raw camera images contain noise, uneven illumination, and compression
 # artifacts that confuse both thresholding and edge detection.
 #
-# ### The Solution — A 4-Step Ladder
+# ### Processing sequence
 #
 # | Step | Function | Purpose | OpenCV Call |
 # |------|----------|---------|-------------|
@@ -79,11 +79,11 @@ print(f"Loaded {len(bev_slots)} BEV slots")
 # | 3 | **Gaussian Blur** | Suppress high-freq noise | `cv2.GaussianBlur(img, ksize, sigma)` |
 # | 4 | **Median Filter** | Remove salt-and-pepper noise | `cv2.medianBlur(img, ksize)` |
 #
-# ### Why this order?
+# ### Ordering
 # - **Grayscale first**: Simplifies all downstream operations to one channel
 # - **CLAHE before blur**: We want to enhance contrast while detail is still present
 # - **Blur after CLAHE**: Noise amplified by CLAHE is then smoothed
-# - **Median last**: It's edge-preserving — perfect final cleanup before Canny
+# - **Median last**: It is edge-preserving, so it is applied last before Canny
 
 # %%
 # --- Load sample frames ---
@@ -189,7 +189,7 @@ show_and_save_fig(fig,
 # %% [markdown]
 # ## 5. Histogram Before vs After CLAHE
 #
-# ### Why CLAHE matters
+# ### Effect of CLAHE
 # In shadows or overcast conditions, the intensity range of a slot
 # may be compressed to just 40–80 (out of 0–255). This makes
 # thresholding nearly impossible.
@@ -241,7 +241,7 @@ show_and_save_fig(fig, 'CLAHE Effect on Intensity Distribution',
 # %% [markdown]
 # ## 6. Edge Preservation: Gaussian vs Median Filter
 #
-# ### The Trade-off
+# ### Trade-offs
 # - **Gaussian blur** is fast and reduces noise well, but it blurs edges
 # - **Median filter** preserves edges while removing impulse noise
 # - For Canny edge detection downstream, **edge sharpness is critical**
@@ -319,15 +319,15 @@ show_and_save_fig(fig, 'Preprocessed Slots: Sunny vs Cloudy',
                  '08_sunny_vs_cloudy.png')
 
 # %% [markdown]
-# ## Phase Summary
+# ## Summary
 #
-# ### What we accomplished
+# ### Work completed
 # 1. Built and visualized the 4-step preprocessing ladder
 # 2. Demonstrated CLAHE's contrast enhancement effect via histograms
 # 3. Compared Gaussian blur vs median filter for edge preservation
 # 4. Ran the full pipeline across weather conditions
 #
-# ### Key insights
+# ### Observations
 # - **CLAHE** dramatically improves contrast in shadowed/overcast slots
 # - **Median filter** preserves edges better than Gaussian — crucial for Canny
 # - The preprocessing pipeline is deterministic and weather-agnostic

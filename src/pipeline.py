@@ -1,6 +1,4 @@
-# =============================================================================
 # pipeline.py - Pipeline Orchestrator
-# =============================================================================
 """
 End-to-end pipeline that processes a single frame through all stages.
 

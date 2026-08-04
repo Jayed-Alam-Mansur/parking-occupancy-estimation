@@ -160,7 +160,7 @@ print(f"Occupied: {(df['occupied']==1).sum()}, Vacant: {(df['occupied']==0).sum(
 # %% [markdown]
 # ## 4. Feature Histograms — Occupied vs Vacant
 #
-# ### The most important visualization in the project
+# ### Class separation
 # These histograms reveal how well each feature separates the two classes.
 # If the distributions don't overlap, thresholding will work perfectly.
 
@@ -239,7 +239,7 @@ ax.invert_yaxis()
 show_and_save_fig(fig, None, '12_fisher_ranking.png')
 
 # %% [markdown]
-# ## 6. Canny Edge Visualization — The Star Feature
+# ## 6. Canny Edge Visualization
 
 # %%
 # --- Show Canny edges for occupied vs vacant ---
@@ -345,9 +345,9 @@ df.to_csv('data/ground_truth/feature_vectors.csv', index=False)
 print(f"Saved feature vectors: data/ground_truth/feature_vectors.csv ({len(df)} samples)")
 
 # %% [markdown]
-# ## Phase Summary
+# ## Summary
 #
-# ### What we accomplished
+# ### Work completed
 # 1. Extracted all 8 features across ~30 frames × 100 slots
 # 2. Visualized per-feature histograms (occupied vs vacant)
 # 3. Computed Fisher discriminant ratios and feature ranking
@@ -355,7 +355,7 @@ print(f"Saved feature vectors: data/ground_truth/feature_vectors.csv ({len(df)} 
 # 5. Verified feature stability across weather conditions
 # 6. Saved feature vectors for threshold tuning
 #
-# ### Key results
+# ### Results
 # - **Edge density** is the most discriminative feature (highest Fisher J)
 # - **Gradient magnitude** and **local variance** are strong secondary features
 # - Features are reasonably stable across sunny/cloudy/rainy conditions

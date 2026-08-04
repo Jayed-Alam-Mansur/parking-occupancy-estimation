@@ -1,6 +1,4 @@
-# =============================================================================
 # decide.py - Rule-Based Occupancy Decision Engine
-# =============================================================================
 """
 Classifies parking slots as OCCUPIED or VACANT using rule-based logic.
 

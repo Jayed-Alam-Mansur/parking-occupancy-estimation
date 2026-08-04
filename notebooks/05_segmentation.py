@@ -84,7 +84,7 @@ print(f"Slots loaded: {len(bev_slots)}, GT labels: {len(gt_lookup)}")
 # %% [markdown]
 # ## 2. Why Thresholding?
 #
-# ### The Goal
+# ### Objective
 # Convert a grayscale image into a **binary mask** where white = "something
 # interesting" (car texture, edges, detail) and black = "background" (asphalt).
 #
@@ -96,7 +96,7 @@ print(f"Slots loaded: {len(bev_slots)}, GT labels: {len(gt_lookup)}")
 # | **Adaptive** | `cv2.adaptiveThreshold(img, 255, ADAPTIVE_GAUSSIAN, THRESH_BINARY, blockSize, C)` | Different T for each pixel based on local neighbourhood |
 # | **Otsu** | `cv2.threshold(img, 0, 255, THRESH_BINARY + THRESH_OTSU)` | Automatically finds optimal T by maximising between-class variance |
 #
-# ### Why not just one method?
+# ### Limitations of a single method
 # - **Global** fails when illumination varies across the slot
 # - **Adaptive** handles local variation but is noisy
 # - **Otsu** is robust but assumes bimodal histogram (not always true)
@@ -165,11 +165,11 @@ show_and_save_fig(fig,
 # %% [markdown]
 # ## 4. Shadow Suppression via HSV
 #
-# ### The Shadow Problem
+# ### Shadows
 # Sunny frames produce **strong shadows** that cross slot boundaries.
 # In grayscale, shadows look like dark vehicle paint → false positives.
 #
-# ### HSV Solution
+# ### HSV-based suppression
 # In HSV colour space, shadows have:
 # - **Low Value (V)** — they are dark
 # - **Low Saturation (S)** — they are grey, not colourful
@@ -319,16 +319,16 @@ show_and_save_fig(fig, 'Complete Segmentation Pipeline — 6 Sample Slots',
                  '10_full_segmentation_pipeline.png')
 
 # %% [markdown]
-# ## Phase Summary
+# ## Summary
 #
-# ### What we accomplished
+# ### Work completed
 # 1. Compared Global, Adaptive, and Otsu thresholding on occupied/vacant slots
 # 2. Demonstrated multi-channel fusion (Otsu + Adaptive) for robust binarisation
 # 3. Implemented HSV shadow suppression for sunny conditions
 # 4. Showed all morphological operations and their visual effects
 # 5. Built the complete segmentation pipeline: Preprocess → Threshold → Fuse → Clean
 #
-# ### Key insights
+# ### Observations
 # - **Otsu alone** sometimes fails on unimodal histograms (empty asphalt)
 # - **Fusion** of Otsu + Adaptive gives more reliable binary masks
 # - **Opening** (3×3) removes most noise; **Closing** (5×5) fills car-interior holes

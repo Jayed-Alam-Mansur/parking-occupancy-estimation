@@ -1,6 +1,4 @@
-# =============================================================================
 # segmentation.py - Image Segmentation (Thresholding)
-# =============================================================================
 """
 Thresholding methods to convert grayscale images to binary masks.
 

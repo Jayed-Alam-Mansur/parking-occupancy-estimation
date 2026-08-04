@@ -76,7 +76,7 @@ config = load_config('config/config.yaml')
 # - $[\mathbf{R} | \mathbf{t}]$ = extrinsic matrix (camera pose)
 # - $s$ = arbitrary scale factor
 #
-# ### Why Homography for Planar Scenes
+# ### Homography for planar scenes
 #
 # For a **planar scene** (the parking lot ground, $Z = 0$), the third column
 # of the rotation matrix drops out, and the full 3×4 projection collapses
@@ -88,14 +88,14 @@ config = load_config('config/config.yaml')
 # requiring at least **4 point correspondences** for an exact solution.
 
 # %% [markdown]
-# ## 3. Why Perspective Correction is the Highest-Value Step
+# ## 3. Effect of Perspective Correction
 #
-# ### The Problem
+# ### Background
 # In an oblique camera view, near slots may be **8000 px²** while far slots
 # are only **900 px²**. If we use a single edge density threshold,
 # it cannot work for both.
 #
-# ### The Solution
+# ### Approach
 # Warp to a **bird's-eye view** where:
 # - All slots have approximately **equal pixel area**
 # - Lane lines become **parallel** (vanishing point sent to infinity)
@@ -122,7 +122,7 @@ else:
 # %% [markdown]
 # ## 4. Perspective Illustration
 #
-# ### Why far slots shrink
+# ### Cause of the distortion
 # In perspective projection, parallel lines converge to a **vanishing point**.
 # Objects at distance $d$ from the camera appear $1/d$ times their actual size.
 
@@ -171,7 +171,7 @@ if frames:
 # - **Returns:** 3×3 homography matrix
 # - For exactly 4 points, this gives the exact DLT solution
 #
-# ### How to choose points
+# ### Point selection
 # Select 4 points that form a rectangle on the ground plane
 # (e.g., corners of a parking row or lane markings).
 
@@ -284,7 +284,7 @@ if frames:
     print(f"\nBEV image size: {bev.shape[1]}×{bev.shape[0]}")
 
 # %% [markdown]
-# ## 8. Side-by-Side Comparison — THE MONEY SHOT
+# ## 8. Side-by-Side Comparison
 
 # %%
 if frames:
@@ -305,7 +305,7 @@ if frames:
 # %% [markdown]
 # ## 9. Transform Slot Polygons to BEV Coordinates
 #
-# ### THE CRITICAL STEP
+# ### Coordinate consistency
 # PKLot's slot coordinates are in **original image coordinates**.
 # We transform them through H:
 # ```python
@@ -413,9 +413,9 @@ if frames:
     print(f"  Scale: {px_per_metre:.1f} px/m")
 
 # %% [markdown]
-# ## Phase Summary
+# ## Summary
 #
-# ### What we accomplished
+# ### Work completed
 # 1. Explained pinhole camera model and homography theory
 # 2. Selected 4 correspondence points
 # 3. Computed 3×3 homography matrix H
@@ -424,7 +424,7 @@ if frames:
 # 6. Validated: slot areas are now much more uniform in BEV
 # 7. Saved homography to config/homography.npz
 #
-# ### Key result
+# ### Result
 # - Original area ratio: **~8x** → BEV area ratio: **~2x** (much better)
 # - This means one set of thresholds can serve ALL slots in the lot
 #

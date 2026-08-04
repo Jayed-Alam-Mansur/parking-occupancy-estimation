@@ -1,6 +1,4 @@
-# =============================================================================
 # morphology.py - Morphological Operations
-# =============================================================================
 """
 Morphological operations for cleaning binary masks.
 

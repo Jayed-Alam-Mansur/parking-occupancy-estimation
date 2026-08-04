@@ -1,6 +1,4 @@
-# =============================================================================
 # roi.py - Region of Interest (Parking Slot) Extraction
-# =============================================================================
 """
 Manages parking slot definitions and ROI extraction.
 

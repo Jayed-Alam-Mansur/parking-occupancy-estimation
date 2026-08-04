@@ -1,9 +1,6 @@
-# =============================================================================
 # Automatic Parking Occupancy Estimation
 # Classical Image Processing Project
-# =============================================================================
 # src/ package initializer
-# =============================================================================
 
 """
 Parking Occupancy Estimation - Source Package

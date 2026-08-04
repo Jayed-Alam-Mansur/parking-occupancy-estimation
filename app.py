@@ -1,11 +1,11 @@
 """
-Interactive explorer for the classical parking-occupancy pipeline.
+Interactive interface to the parking occupancy pipeline.
 
 Run with:  streamlit run app.py
 
-Every stage below calls the same functions in src/ that the notebooks call —
-nothing is reimplemented here. The point of this app is that the parameters
-are live: move a slider and watch the classical pipeline react.
+Each stage calls the same functions in src/ that the notebooks use, so the
+results match the notebook results. The pipeline parameters are exposed as
+inputs so their effect on the output can be measured directly.
 """
 import glob
 import os
@@ -30,8 +30,8 @@ from src.segmentation import adaptive_threshold, fuse_channels, otsu_threshold
 from src.stats import compute_statistics
 from src.visualize import annotate_parking_image, create_legend
 
-st.set_page_config(page_title="Parking Occupancy — Classical CV",
-                   page_icon="P", layout="wide")
+st.set_page_config(page_title="Parking Occupancy Estimation",
+                   layout="wide")
 
 FEATURES = ['edge_density', 'foreground_ratio', 'gradient_magnitude',
             'local_variance', 'largest_component', 'intensity_std',
@@ -63,7 +63,7 @@ def list_samples():
 
 
 def rgb(img):
-    """BGR (OpenCV) → RGB (Streamlit)."""
+    """Convert BGR (OpenCV) to RGB (Streamlit)."""
     if img.ndim == 2:
         return img
     return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -72,7 +72,7 @@ def rgb(img):
 # Pipeline functions
 
 def slot_stages(bev, polygon, p):
-    """Run one slot through every stage, keeping each intermediate."""
+    """Process one space through all stages, returning each intermediate."""
     slot_img, _, mask = extract_slot_image(bev, polygon)
     if slot_img.size == 0:
         return None
@@ -101,7 +101,7 @@ def slot_stages(bev, polygon, p):
 
 @st.cache_data(show_spinner=False)
 def process_frame(jpg, xml, p, thr):
-    """Full 100-bay pass. Cached on (frame, params, thresholds)."""
+    """Process all 100 spaces. Cached on (frame, params, thresholds)."""
     H, size, slots, _, weights, _, _ = load_assets()
     img = cv2.imread(jpg)
     t0 = time.perf_counter()
@@ -122,16 +122,16 @@ def process_frame(jpg, xml, p, thr):
             'confidences': confs, 'gt': gt, 'ms': elapsed}
 
 
-CALIB_W, CALIB_H = 1280, 720          # resolution the homography was solved on
+CALIB_W, CALIB_H = 1280, 720   # resolution the homography was solved on
 
 
 def rescale_homography(iw, ih):
-    """Adapt the committed calibration to a different resolution.
+    """Adapt the stored calibration to a different image resolution.
 
-    src_points are absolute pixel coordinates, so the same camera at a
-    different resolution needs them scaled — otherwise they address the wrong
-    scene points and every bay lands slightly off. Only valid when the aspect
-    ratio matches; a different aspect ratio means a genuinely different view.
+    src_points are absolute pixel coordinates, so the same camera at another
+    resolution requires them to be scaled; otherwise they refer to the wrong
+    scene points. Valid only when the aspect ratio matches, since a different
+    aspect ratio corresponds to a different field of view.
     """
     same_aspect = abs(iw / ih - CALIB_W / CALIB_H) < 0.02
     if not same_aspect:
@@ -142,17 +142,17 @@ def rescale_homography(iw, ih):
 
 
 def decode_upload(raw):
-    """Uploaded bytes → BGR image."""
+    """Decode uploaded bytes to a BGR image."""
     arr = np.frombuffer(raw, np.uint8)
     return cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
 
 def slots_from_grid(size, rows, cols, margin_x, margin_y, gap):
-    """Synthesise a regular bay layout in BEV coordinates.
+    """Generate a regular space layout in bird's-eye-view coordinates.
 
-    For a lot this pipeline has never been calibrated against, a regular grid is
-    the honest fallback: no annotation file exists, so bays are assumed evenly
-    spaced. Verify the overlay visually before trusting any number it produces.
+    Used when no annotation file exists for the lot. Spaces are assumed evenly
+    spaced, so the overlay should be checked visually before the output is
+    used.
     """
     w, h = size
     usable_w = w - 2 * margin_x
@@ -172,7 +172,7 @@ def slots_from_grid(size, rows, cols, margin_x, margin_y, gap):
 
 
 def slots_from_xml_bytes(raw, H):
-    """PKLot-format XML → BEV bay polygons + ground-truth labels."""
+    """PKLot-format XML to BEV space polygons and ground-truth labels."""
     import tempfile
     with tempfile.NamedTemporaryFile(suffix='.xml', delete=False) as fh:
         fh.write(raw)
@@ -187,14 +187,13 @@ def slots_from_xml_bytes(raw, H):
 
 
 def alignment_report(bev, slots, min_coverage=0.5):
-    """How many bays actually sit on real image content?
+    """Count spaces that fall on valid image content.
 
-    This guards against a silently wrong result. Checking that a polygon falls
-    inside the canvas is NOT enough — `warp_perspective` always returns the full
-    BEV canvas, so a mismatched homography still puts every bay "in bounds",
-    just over black padding where no source pixel mapped. So measure the
-    fraction of each bay that is actually non-black, and treat bays sitting on
-    emptiness as unusable.
+    A bounds check is not sufficient: warp_perspective always returns the full
+    BEV canvas, so a mismatched homography still places every space inside the
+    canvas, over black padding where no source pixel was mapped. This measures
+    the non-black fraction of each space instead and treats spaces over padding
+    as unusable.
     """
     gray = cv2.cvtColor(bev, cv2.COLOR_BGR2GRAY) if bev.ndim == 3 else bev
     usable = 0
@@ -211,7 +210,7 @@ def alignment_report(bev, slots, min_coverage=0.5):
 
 
 def run_custom(bev, slots, p, thr, weights):
-    """Full pass over an arbitrary bay layout."""
+    """Process an arbitrary space layout."""
     feats, labels, confs = {}, {}, {}
     for sid, poly in slots.items():
         s = slot_stages(bev, poly, p)
@@ -237,9 +236,9 @@ def score_against_gt(labels, gt):
             'f1': 2 * prec * rec / max(prec + rec, 1e-9)}
 
 
-@st.cache_data(show_spinner="Extracting features across all sample frames…")
+@st.cache_data(show_spinner="Extracting features across all sample frames...")
 def corpus_features(p, thr):
-    """Every slot of every sample frame — the evidence base for Act 8."""
+    """Features for every space in every sample frame."""
     rows = []
     for s in list_samples():
         r = process_frame(s['jpg'], s['xml'], p, thr)
@@ -257,55 +256,59 @@ def corpus_features(p, thr):
 H, SIZE, SLOTS, TUNED, WEIGHTS, SRC_PTS, DST_PTS = load_assets()
 samples = list_samples()
 
-st.sidebar.title("Controls")
+st.sidebar.title("Parameters")
 
 weathers = sorted({s['weather'] for s in samples})
 w = st.sidebar.selectbox(
     "Weather", weathers,
     index=weathers.index('cloudy') if 'cloudy' in weathers else 0,
-    help="Cloudy is the easy case — flat, even light. Switch to sunny for the "
-         "shadow problem and rainy for reflections; both are where it struggles.")
+    help="Cloudy frames have the most even illumination. Sunny frames "
+         "introduce cast shadows and rainy frames introduce reflections; "
+         "accuracy is lower on both.")
 opts = [s for s in samples if s['weather'] == w]
 
 
 @st.cache_data
 def gt_occupancy(xml):
-    """Ground-truth occupancy rate — cheap, XML only, no image processing."""
+    """Ground-truth occupancy rate, read from the XML only."""
     slots = parse_pklot_xml(xml)
     return sum(s['occupied'] for s in slots) / max(len(slots), 1)
 
 
-# Default to the most balanced frame. A 6 a.m. empty lot scores 100 % and an
-# F1 of zero, which reads as broken rather than impressive.
+# Default to the frame with the most balanced ground truth. An empty
+# early-morning lot gives 100 % accuracy with an undefined F1.
 balance = [abs(gt_occupancy(o['xml']) - 0.5) for o in opts]
 default_i = int(np.argmin(balance)) if opts else 0
 
 frame = opts[st.sidebar.selectbox(
     "Frame", range(len(opts)), index=default_i,
     format_func=lambda i: f"{opts[i]['name'].split('_', 1)[1]} "
-                          f"· {gt_occupancy(opts[i]['xml']) * 100:.0f}% full")]
+                          f", {gt_occupancy(opts[i]['xml']) * 100:.0f}% full")]
 
 st.sidebar.markdown("---")
-st.sidebar.caption("**Preprocessing** — Act 4")
+st.sidebar.caption("Preprocessing (Section 4)")
 clip = st.sidebar.slider("CLAHE clip limit", 0.5, 8.0, 2.0, 0.5,
-                         help="Caps contrast amplification. Raise it too far and noise is amplified into fake edges.")
+                         help="Limits contrast amplification. High values "
+                              "amplify noise into spurious edges.")
 grid = st.sidebar.select_slider("CLAHE tile grid", [4, 8, 16], value=8)
 gauss = st.sidebar.select_slider("Gaussian kernel", [1, 3, 5, 7, 9], value=5)
 median = st.sidebar.select_slider("Median kernel", [1, 3, 5, 7], value=3)
 
-st.sidebar.caption("**Segmentation** — Act 5")
+st.sidebar.caption("Segmentation (Section 5)")
 block = st.sidebar.select_slider("Adaptive block size", [7, 11, 15, 21, 31], value=11)
 C = st.sidebar.slider("Adaptive constant C", -10, 15, 2)
 open_k = st.sidebar.select_slider("Morph. opening", [1, 3, 5, 7], value=3)
 close_k = st.sidebar.select_slider("Morph. closing", [1, 3, 5, 7], value=5)
 erosion = st.sidebar.slider("Core-mask erosion (px)", 0, 10, 3,
-                            help="Act 3: shrink each bay inward so a neighbour's car cannot leak in.")
+                            help="Section 3: erode each space inward so "
+                                 "that a vehicle in an adjacent space does "
+                                 "not contribute pixels.")
 
-st.sidebar.caption("**Features** — Act 6")
+st.sidebar.caption("Feature extraction (Section 6)")
 canny_lo = st.sidebar.slider("Canny low", 10, 150, 50)
 canny_hi = st.sidebar.slider("Canny high", 60, 300, 150)
 
-st.sidebar.caption("**Decision** — Act 7")
+st.sidebar.caption("Classification (Section 7)")
 score_t = st.sidebar.slider("Score threshold", 0.0, 1.0,
                             float(TUNED['score_threshold']), 0.01)
 ed_lo = st.sidebar.slider("Fast-path VACANT below", 0.0, 0.6,
@@ -320,66 +323,69 @@ THR = (('edge_density_low', ed_lo), ('edge_density_high', ed_hi),
        ('score_threshold', score_t),
        ('confidence_low', float(TUNED['confidence_low'])))
 
-if st.sidebar.button("↺ Reset to tuned values", width='stretch'):
+if st.sidebar.button("Reset to tuned values", width='stretch'):
     st.cache_data.clear()
     st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.caption("No ML anywhere in this app. Every stage is an OpenCV "
-                   "primitive called from `src/`.")
+st.sidebar.caption("All stages are OpenCV operations called from `src/`. "
+                   "No machine learning is used.")
 
 
 # Main content
 
-st.title("Parking Occupancy Estimation — Classical Image Processing")
-st.caption("One camera. No sensors. No machine learning. "
-           "Move any slider and the whole pipeline recomputes live.")
+st.title("Parking Occupancy Estimation")
+st.caption("Classical image processing pipeline. One fixed camera, no "
+           "per-space sensors, no machine learning. Changing any parameter "
+           "reruns the full pipeline.")
 
 tab1, tab2, tab5, tab3, tab4 = st.tabs([
-    "Pipeline Explorer", "Whole Lot", "Your Own Image",
-    "The Twist (Act 8)", "The Story"])
+    "Pipeline Stages", "Full Lot Result", "Process New Image",
+    "Feature Comparison", "Project Summary"])
 
 
-# Tab 1 — stage by stage on one bay
+# Tab 1: per-space processing stages
 with tab1:
     res = process_frame(frame['jpg'], frame['xml'], P, THR)
     gt = res['gt']
 
     left, right = st.columns([1, 1])
     with left:
-        st.subheader("Act 2 — the camera's view")
+        st.subheader("Original camera view")
         st.image(rgb(res['img']), width='stretch')
-        st.caption("Near bays are large, far bays are slivers. Same physical size.")
+        st.caption("Spaces near the camera cover more pixels than distant "
+                   "spaces of the same physical size.")
     with right:
-        st.subheader("…and after the homography")
+        st.subheader("After perspective correction")
         st.image(rgb(res['bev']), width='stretch')
-        st.caption("Every bay now roughly the same size — measurements become comparable.")
+        st.caption("All spaces are now approximately equal in size, so "
+                   "measurements are comparable across the lot.")
 
     st.markdown("---")
-    st.subheader("Act 4–6 — follow one bay through every stage")
+    st.subheader("Per-space processing stages")
 
     ids = sorted(SLOTS.keys())
     occ = [i for i in ids if gt.get(i) == 1]
     vac = [i for i in ids if gt.get(i) == 0]
     c1, c2 = st.columns([1, 3])
     with c1:
-        kind = st.radio("Pick a bay that is truly…",
+        kind = st.radio("Ground-truth label of the space to inspect",
                         ["OCCUPIED", "VACANT"], horizontal=True)
         pool = occ if kind == "OCCUPIED" else vac
         sid = st.selectbox("Bay #", pool) if pool else None
 
     if sid is not None:
         s = slot_stages(res['bev'], SLOTS[sid], P)
-        ladder = [("1 · ROI", s['slot']), ("2 · Grayscale", s['gray']),
-                  ("3 · CLAHE", s['clahe']), ("4 · Gaussian", s['blur']),
-                  ("5 · Median", s['denoised'])]
-        seg = [("6 · Otsu", s['otsu']), ("7 · Adaptive", s['adaptive']),
-               ("8 · Fused", s['fused']), ("9 · Morphology", s['cleaned'])]
+        ladder = [("1 , ROI", s['slot']), ("2 , Grayscale", s['gray']),
+                  ("3 , CLAHE", s['clahe']), ("4 , Gaussian", s['blur']),
+                  ("5 , Median", s['denoised'])]
+        seg = [("6 , Otsu", s['otsu']), ("7 , Adaptive", s['adaptive']),
+               ("8 , Fused", s['fused']), ("9 , Morphology", s['cleaned'])]
 
-        st.markdown("**The preprocessing ladder**")
+        st.markdown("Preprocessing stages")
         for col, (t, im) in zip(st.columns(len(ladder)), ladder):
             col.image(rgb(im), caption=t, width='stretch')
-        st.markdown("**Segmentation and cleanup**")
+        st.markdown("Segmentation and morphology stages")
         for col, (t, im) in zip(st.columns(len(seg)), seg):
             col.image(im, caption=t, width='stretch')
 
@@ -389,11 +395,11 @@ with tab1:
         ok = (lab == truth)
         m1, m2, m3 = st.columns(3)
         m1.metric("Verdict", "OCCUPIED" if lab else "VACANT",
-                  "correct ✓" if ok else "WRONG ✗", delta_color="normal" if ok else "inverse")
+                  "correct" if ok else "incorrect", delta_color="normal" if ok else "inverse")
         m2.metric("Weighted score", f"{sc:.3f}", f"threshold {score_t:.3f}")
         m3.metric("Confidence", f"{conf:.2f}")
 
-        st.markdown("**The eight numbers this bay reduces to**")
+        st.markdown("Extracted features for this space")
         fd = pd.DataFrame({'feature': FEATURES,
                            'value': [f[k] for k in FEATURES],
                            'weight': [WEIGHTS[k] for k in FEATURES]})
@@ -404,7 +410,7 @@ with tab1:
                      width='stretch', hide_index=True)
 
 
-# Tab 2 — the whole lot
+# Tab 2: full lot result
 with tab2:
     res = process_frame(frame['jpg'], frame['xml'], P, THR)
     m = score_against_gt(res['labels'], res['gt'])
@@ -420,33 +426,33 @@ with tab2:
     annotated = annotate_parking_image(res['bev'], SLOTS, res['labels'],
                                        confidences=res['confidences'])
     st.image(rgb(annotated), width='stretch',
-             caption="Green = predicted VACANT · Red = predicted OCCUPIED")
+             caption="Green: predicted vacant. Red: predicted occupied.")
 
-    st.markdown("**Where it went wrong on this frame**")
+    st.markdown("Error breakdown for this frame")
     e1, e2 = st.columns(2)
-    e1.metric("False OCCUPIED", m['fp'], help="Called occupied, actually empty — sends drivers away from a free space.")
-    e2.metric("False VACANT", m['fn'], help="Called empty, actually occupied — sends drivers to a taken space. The worse error.")
+    e1.metric("False OCCUPIED", m['fp'], help="Predicted occupied but actually vacant.")
+    e2.metric("False VACANT", m['fn'], help="Predicted vacant but actually occupied.")
     f1txt = f"{m['f1']:.3f}" if (m['tp'] + m['fn']) else "n/a (no occupied bays)"
-    st.caption(f"Confusion on {m['n']} bays — TP {m['tp']} · TN {m['tn']} · "
-               f"FP {m['fp']} · FN {m['fn']} · F1 {f1txt}")
+    st.caption(f"Confusion on {m['n']} bays - TP {m['tp']} , TN {m['tn']} , "
+               f"FP {m['fp']} , FN {m['fn']} , F1 {f1txt}")
 
 
-# Tab 5 — bring your own image
+# Tab 5: process a new image
 with tab5:
-    st.subheader("Run the pipeline on your own image")
+    st.subheader("Process a new image")
     st.markdown(
-        "Upload any parking-lot photo and push it through the identical "
-        "pipeline. Two things have to be true before the numbers mean "
-        "anything: the **perspective** must be corrected for *your* camera, "
-        "and the system must know **where the bays are**. Both are set below.")
+        "Upload a parking-lot image to process with the same pipeline. "
+        "Two conditions must hold for the results to be valid: the "
+        "perspective correction must match the camera used, and the space "
+        "layout must correspond to the lot in the image. Both are set below.")
 
     up = st.file_uploader("Parking-lot image", type=['jpg', 'jpeg', 'png'],
                           key='own_img')
 
     if up is None:
-        st.info("Waiting for an image. If you just want to see it work, any "
-                "frame from `data/samples/` is a same-camera image and will "
-                "align perfectly with the committed calibration.")
+        st.info("No image selected. Any frame from `data/samples/` uses the "
+                "same camera as the stored calibration and will align "
+                "correctly.")
     else:
         img = decode_upload(up.getvalue())
         if img is None:
@@ -455,10 +461,10 @@ with tab5:
 
         ih, iw = img.shape[:2]
 
-        # ---- Act 1's quality gate, applied to user input ----
+        # ---- quality gate applied to the uploaded image ----
         passes, diag = quality_gate(img)
         q1, q2, q3 = st.columns(3)
-        q1.metric("Resolution", f"{iw} × {ih}")
+        q1.metric("Resolution", f"{iw} x {ih}")
         q2.metric("Brightness", f"{diag['brightness']:.0f}",
                   "too dark" if diag['too_dark'] else "ok",
                   delta_color="inverse" if diag['too_dark'] else "normal")
@@ -466,48 +472,50 @@ with tab5:
                   "too blurry" if diag['too_blurry'] else "ok",
                   delta_color="inverse" if diag['too_blurry'] else "normal")
         if not passes:
-            st.warning("This image fails the Act 1 quality gate. The pipeline "
-                       "will still run, but treat the output as unreliable.")
+            st.warning("This image does not pass the quality gate. The "
+                       "pipeline will still run, but the output is "
+                       "unreliable.")
 
         st.markdown("---")
         c_geo, c_lay = st.columns(2)
 
-        # ---- geometry ----
+        # ---- perspective correction ----
         with c_geo:
-            st.markdown("**1 · Perspective correction**")
+            st.markdown("1. Perspective correction")
             geo = st.radio(
                 "Homography", ["Committed calibration", "Calibrate for this image"],
                 key='geo_mode', label_visibility='collapsed',
-                captions=["Correct only if this is the same camera as PKLot "
-                          "`parking2` (1280×720).",
-                          "Pick the four ground-plane corners yourself."])
+                captions=["Valid only for the same camera as PKLot "
+                          "`parking2` (1280x720).",
+                          "Specify the four ground-plane corners manually."])
 
             if geo == "Committed calibration":
                 size_u = SIZE
                 if (iw, ih) == (CALIB_W, CALIB_H):
                     Hu = H
                     st.success(f"Exact match for the calibration resolution "
-                               f"({CALIB_W}×{CALIB_H}).")
+                               f"({CALIB_W}x{CALIB_H}).")
                 else:
                     Hs, ok_aspect = rescale_homography(iw, ih)
                     if ok_aspect:
                         Hu = Hs
-                        st.info(f"This image is {iw}×{ih}, not the "
-                                f"{CALIB_W}×{CALIB_H} the homography was solved "
-                                f"on — but the aspect ratio matches, so the "
+                        st.info(f"This image is {iw}x{ih}, not the "
+                                f"{CALIB_W}x{CALIB_H} the homography was solved "
+                                f"on - but the aspect ratio matches, so the "
                                 f"calibration points were **rescaled by "
-                                f"{iw / CALIB_W:.2f}×**. Valid if this is the "
+                                f"{iw / CALIB_W:.2f}x**. Valid if this is the "
                                 f"same camera at a different resolution.")
                     else:
                         Hu = H
-                        st.error(f"This image is {iw}×{ih}, a different aspect "
+                        st.error(f"This image is {iw}x{ih}, a different aspect "
                                  f"ratio from the calibration "
-                                 f"({CALIB_W}×{CALIB_H}). The committed "
-                                 f"homography cannot be adapted to it — "
+                                 f"({CALIB_W}x{CALIB_H}). The committed "
+                                 f"homography cannot be adapted to it - "
                                  f"switch to *Calibrate for this image*.")
             else:
-                st.caption("Corners as fractions of width/height, clockwise "
-                           "from top-left. Defaults are the committed values.")
+                st.caption("Corner positions as fractions of width and height, "
+                           "clockwise from top-left. Defaults are the "
+                           "stored calibration values.")
                 defaults = [(-0.011, 0.216), (0.943, 0.216),
                             (0.943, 0.819), (-0.011, 0.819)]
                 names = ["top-left", "top-right", "bottom-right", "bottom-left"]
@@ -534,9 +542,9 @@ with tab5:
 
         bev_u = warp_perspective(img, Hu, size_u)
 
-        # ---- bay layout ----
+        # ---- space layout ----
         with c_lay:
-            st.markdown("**2 · Where are the bays?**")
+            st.markdown("2. Space layout")
             lay = st.radio(
                 "Layout", ["Committed slots.json (100 bays)",
                            "Upload matching PKLot XML",
@@ -546,16 +554,17 @@ with tab5:
             gt_u = None
             if lay == "Committed slots.json (100 bays)":
                 slots_u = SLOTS
-                st.caption("The 100 hand-calibrated bays from Act 3. Only "
-                           "valid for the same camera *and* the committed "
+                st.caption("The 100 calibrated spaces from Section 3. "
+                           "Valid only for the same camera and the stored "
                            "homography.")
             elif lay == "Upload matching PKLot XML":
                 xup = st.file_uploader("PKLot-format XML", type=['xml'],
                                        key='own_xml')
                 if xup is None:
-                    st.info("Upload the XML that pairs with this frame. It "
-                            "gives both the bay polygons and ground truth, so "
-                            "accuracy can be scored.")
+                    st.info("Upload the XML file that corresponds to this "
+                            "frame. It provides both the space polygons and "
+                            "the ground-truth labels, so accuracy can be "
+                            "computed.")
                     slots_u = {}
                 else:
                     slots_u, gt_u = slots_from_xml_bytes(xup.getvalue(), Hu)
@@ -569,35 +578,35 @@ with tab5:
                 my = g2.slider("Margin Y", 0, 200, 60, key='g_my')
                 gap = st.slider("Gap between bays", 0, 20, 2, key='g_gap')
                 slots_u = slots_from_grid(size_u, rows, cols, mx, my, gap)
-                st.caption(f"{len(slots_u)} synthetic bays. No annotation file "
-                           f"exists for an unknown lot, so bays are assumed "
-                           f"evenly spaced — check the overlay before trusting "
-                           f"the count.")
+                st.caption(f"{len(slots_u)} generated spaces. With no "
+                           f"annotation file the spaces are assumed evenly "
+                           f"spaced; check the overlay before using the "
+                           f"result.")
 
         if not slots_u:
             st.stop()
 
-        # ---- alignment guard ----
+        # ---- alignment check ----
         usable, total = alignment_report(bev_u, slots_u)
         frac = usable / max(total, 1)
         st.markdown("---")
         if frac < 0.8:
-            st.error(f"**Alignment check failed — {usable} of {total} bays "
-                     f"landed inside the warped view.** The layout does not "
-                     f"match this image, so any occupancy number below is "
-                     f"meaningless. Recalibrate the corners, or switch to a "
-                     f"generated grid.")
+            st.error(f"Alignment check failed: {usable} of {total} spaces "
+                     f"fall on valid image content. The layout does not match "
+                     f"this image, so the occupancy figures below are not "
+                     f"valid. Adjust the corner points or use a generated "
+                     f"grid.")
         else:
-            st.success(f"Alignment check: {usable} of {total} bays landed "
-                       f"inside the warped view.")
+            st.success(f"Alignment check: {usable} of {total} spaces fall "
+                       f"on valid image content.")
 
-        # ---- run it ----
+        # ---- run the pipeline ----
         t0 = time.perf_counter()
         feats_u, labels_u, confs_u = run_custom(bev_u, slots_u, P, THR, WEIGHTS)
         ms_u = (time.perf_counter() - t0) * 1000
 
         if not labels_u:
-            st.error("No bay produced a usable crop. Check the calibration.")
+            st.error("No space produced a usable region. Check the calibration.")
             st.stop()
 
         stats_u = compute_statistics(labels_u)
@@ -611,17 +620,17 @@ with tab5:
         if gt_u:
             mu = score_against_gt(labels_u, gt_u)
             f1u = f"{mu['f1']:.3f}" if (mu['tp'] + mu['fn']) else "n/a"
-            st.info(f"**Scored against the uploaded ground truth:** "
-                    f"{mu['acc'] * 100:.1f}% accuracy · F1 {f1u} · "
-                    f"false-occupied {mu['fp']} · false-vacant {mu['fn']} "
-                    f"({mu['n']} bays matched)")
+            st.info(f"Scored against the uploaded ground truth: "
+                    f"{mu['acc'] * 100:.1f}% accuracy, F1 {f1u}, "
+                    f"false occupied {mu['fp']}, false vacant {mu['fn']}, "
+                    f"{mu['n']} spaces matched.")
 
         v1, v2 = st.columns(2)
         with v1:
-            st.markdown("**Your image**")
+            st.markdown("Input image")
             st.image(rgb(img), width='stretch')
         with v2:
-            st.markdown("**Warped, with the verdict drawn on**")
+            st.markdown("Corrected view with classification overlay")
             ann_u = annotate_parking_image(bev_u, slots_u, labels_u,
                                            confidences=confs_u)
             ann_u = create_legend(ann_u, stats_u)
@@ -634,7 +643,7 @@ with tab5:
                                file_name=f"occupancy_{up.name.rsplit('.', 1)[0]}.png",
                                mime="image/png")
 
-        with st.expander("Per-bay features and verdicts"):
+        with st.expander("Per-space features and labels"):
             st.dataframe(pd.DataFrame([
                 {'bay': sid, 'verdict': 'OCCUPIED' if labels_u[sid] else 'VACANT',
                  'confidence': confs_u[sid],
@@ -643,26 +652,25 @@ with tab5:
                 width='stretch', hide_index=True)
 
 
-# Tab 3 — the twist
+# Tab 3: feature comparison
 with tab3:
-    st.subheader("My eight-feature cascade versus one single number")
+    st.subheader("Single-feature baseline compared with the eight-feature cascade")
     st.markdown(
-        "In Act 6 the **Fisher ranking** said `edge_density` was the strongest "
-        "feature by a wide margin. So here is the uncomfortable experiment: "
-        "throw away the other seven, threshold `edge_density` alone, and see "
-        "who wins. **Drag the slider.**")
+        "The Fisher ranking in Section 6 identifies `edge_density` as the "
+        "most discriminative feature. This compares the full eight-feature "
+        "cascade against a baseline that thresholds `edge_density` alone, "
+        "with no weighting or scoring stage.")
 
-    # Streamlit executes EVERY tab body on every rerun, not just the visible
-    # one. Calling corpus_features() here unconditionally means a page load
-    # pushes 21 frames x 100 bays through the pipeline before anything renders
-    # — fine locally, but on a small shared cloud vCPU that risks tripping the
-    # startup timeout. So it is gated behind an explicit click.
+    # Streamlit executes every tab body on each rerun, not only the visible
+    # one. Calling corpus_features() unconditionally would process 21 frames
+    # of 100 spaces before the first render, which risks a startup timeout
+    # on a small shared vCPU, so it is gated behind an explicit click.
     if not st.session_state.get('twist_ready'):
-        st.info("This compares the cascade against a one-number baseline across "
-                "**every bay of all 21 sample frames** — 1,999 labelled bays. "
-                "It takes a couple of seconds, so it runs on demand rather than "
-                "on every page load.")
-        if st.button("▶︎ Run the comparison", type="primary"):
+        st.info("The comparison runs over every space in all 21 sample "
+                "frames, giving 1,999 labelled spaces. It takes a few "
+                "seconds, so it runs on request rather than on every page "
+                "load.")
+        if st.button("Run comparison", type="primary"):
             st.session_state.twist_ready = True
             st.rerun()
         df = pd.DataFrame()
@@ -680,12 +688,13 @@ with tab3:
         best_cut = float(grid_[int(np.argmax(accs))])
 
         cut = st.slider("Single-feature cutoff on `edge_density`", lo, hi, best_cut, 0.001,
-                        help="Defaults to the swept optimum — the same method Act 7 uses "
-                             "to tune the cascade's own threshold.")
+                        help="Defaults to the value found by sweeping, the "
+                             "same method used in Section 7 to set the "
+                             "cascade threshold.")
         if abs(cut - best_cut) > 1e-9:
-            st.caption(f"↩︎ Swept optimum is **{best_cut:.4f}** "
-                       f"({max(accs) * 100:.2f}%). Tuned fast-path value is "
-                       f"{TUNED['edge_density_high']:.4f}.")
+            st.caption(f"Swept optimum is {best_cut:.4f} "
+                       f"({max(accs) * 100:.2f}%). The tuned fast-path value "
+                       f"is {TUNED['edge_density_high']:.4f}.")
 
         base = (df['edge_density'] > cut).astype(int)
         acc_base = (base == df['truth']).mean()
@@ -699,84 +708,101 @@ with tab3:
             return 2 * p * r / max(p + r, 1e-9)
 
         a, b, c = st.columns(3)
-        a.metric("One number: `edge_density`", f"{acc_base * 100:.2f}%", f"F1 {f1(base):.3f}")
-        b.metric("Full 8-feature cascade", f"{acc_casc * 100:.2f}%", f"F1 {f1(df['cascade']):.3f}")
+        a.metric("edge_density only", f"{acc_base * 100:.2f}%", f"F1 {f1(base):.3f}")
+        b.metric("Eight-feature cascade", f"{acc_casc * 100:.2f}%", f"F1 {f1(df['cascade']):.3f}")
         gap = (acc_base - acc_casc) * 100
-        c.metric("Gap", f"{gap:+.2f} pts",
-                 "baseline wins" if gap > 0 else "cascade wins",
+        c.metric("Difference", f"{gap:+.2f} pts",
+                 "baseline higher" if gap > 0 else "cascade higher",
                  delta_color="inverse" if gap > 0 else "normal")
 
         sweep = pd.DataFrame({
             'cutoff': np.linspace(df['edge_density'].min(), df['edge_density'].max(), 120)})
-        sweep['single feature'] = [((df['edge_density'] > t).astype(int) == df['truth']).mean()
+        sweep['edge_density only'] = [((df['edge_density'] > t).astype(int) == df['truth']).mean()
                                    for t in sweep.cutoff]
-        sweep['8-feature cascade'] = acc_casc
+        sweep['eight-feature cascade'] = acc_casc
         st.line_chart(sweep.set_index('cutoff'), height=320)
-        st.caption(f"Accuracy across {len(df):,} labelled bays from "
-                   f"{df['frame'].nunique()} curated sample frames in `data/samples/`. "
-                   f"Notebook Act 8 reports 74.30 % for the cascade — measured on a "
-                   f"different, larger set (11,599 bays from 120 evenly-spaced frames), "
-                   f"which is why the number here differs.")
+        st.caption(f"Accuracy across {len(df):,} labelled spaces from "
+                   f"{df['frame'].nunique()} sample frames in `data/samples/`. "
+                   f"Section 8 of the notebook reports 74.30 % for the "
+                   f"cascade, measured on a larger set of 11,599 spaces from "
+                   f"120 evenly spaced frames, which is why the value here "
+                   f"differs.")
 
         st.info(
-            "**Why the simple thing wins.** The Fisher weights were fitted on a "
-            "small clean sample and then applied to messy data. The seven weaker "
-            "features are correlated with each other rather than independent, so "
-            "averaging them does not cancel error — it dilutes the one feature "
-            "that worked. And every extra feature drags in its own failure mode: "
-            "saturation breaks on grey cars, local variance breaks on wet tarmac.")
+            "Likely causes. The Fisher weights were computed on a small, "
+            "comparatively clean sample and then applied to a larger and more "
+            "variable set, so the weighting does not transfer. The seven "
+            "weaker features are mutually correlated rather than independent, "
+            "so averaging them reduces rather than reinforces the "
+            "contribution of the most discriminative feature. Each additional "
+            "feature also introduces its own failure cases: mean_saturation "
+            "performs poorly on grey vehicles and local_variance performs "
+            "poorly on wet road surface.")
 
-        st.markdown("**Per-weather breakdown**")
+        st.markdown("Per-weather breakdown")
         pw = df.groupby('weather').apply(
             lambda g: pd.Series({
                 'bays': len(g),
-                'single feature': ((g['edge_density'] > cut).astype(int) == g['truth']).mean(),
+                'edge_density only': ((g['edge_density'] > cut).astype(int) == g['truth']).mean(),
                 'cascade': (g['cascade'] == g['truth']).mean()}),
             include_groups=False)
-        st.dataframe(pw.style.format({'bays': '{:.0f}', 'single feature': '{:.1%}',
+        st.dataframe(pw.style.format({'bays': '{:.0f}', 'edge_density only': '{:.1%}',
                                       'cascade': '{:.1%}'}), width='stretch')
 
 
-# Tab 4 — the story
+# Tab 4: project summary
 with tab4:
     st.markdown("""
-### The problem
-You circle a full-looking car park twice and eventually find a space that was
-free the whole time. The industry fixes this with **one sensor per bay** — a
-hundred spaces means a hundred units to trench in, wire, power and maintain.
+### Objective
 
-**This project replaces all hundred with one camera and some geometry.**
+Estimate parking occupancy from a single surveillance frame using one fixed
+camera and no per-space sensors. The system reports the total number of spaces,
+a per-space occupied or vacant label, and the overall occupancy rate.
 
-### The rule
-No TensorFlow, no PyTorch, no YOLO, no pretrained anything. A YOLO model would
-solve this in twenty lines and teach nothing about images. Every threshold here
-was chosen by a human who can defend it.
+### Constraints
 
-| Act | What happens | Why it matters |
+The implementation uses only classical image processing. TensorFlow, PyTorch,
+Keras, YOLO and any pretrained model are excluded by the project
+specification. Every threshold and kernel size is set explicitly from the
+measurements reported in the notebook.
+
+### Method
+
+| Section | Stage | Purpose |
 |---|---|---|
-| **1** | Look at the data first | Sunny shadows are dark and car-shaped. That drives everything after. |
-| **2** | Homography → bird's-eye view | Far bays were slivers; now every bay is comparable. |
-| **3** | 100 masked bays, eroded inward | Stops a neighbour's car leaking across a shared painted line. |
-| **4** | Grayscale → CLAHE → blur → median | Makes noon and dusk comparable. CLAHE works per tile, not globally. |
-| **5** | Otsu + adaptive fused, then morphology | HSV escapes the shadow trap: shadows lose *value*, keep *hue*. |
-| **6** | Eight features, ranked by Fisher ratio | `edge_density` wins by a wide margin. Remember that. |
-| **7** | Two-stage cascade, swept threshold | Fast path resolves ~⅓ of bays; the rest get a weighted vote. |
-| **8** | 11,599 bays evaluated — **and the twist** | The one-number baseline beat the whole cascade. |
-| **9** | Honest limits and next steps | Ship the baseline. Re-fit weights on full data. Add temporal smoothing. |
+| 1 | Dataset and exploratory analysis | Establish image properties and annotation format |
+| 2 | Perspective transformation | Homography to a bird's-eye view so spaces are comparable in size |
+| 3 | Region of interest extraction | 100 masked spaces, eroded inward to prevent overlap between neighbours |
+| 4 | Preprocessing | Grayscale, CLAHE, Gaussian blur, median filter |
+| 5 | Segmentation and morphology | Fused Otsu and adaptive thresholds, HSV shadow suppression, opening and closing |
+| 6 | Feature extraction | Eight per-space features, ranked by Fisher discriminant ratio |
+| 7 | Threshold calibration | Two-stage cascade with a swept decision threshold |
+| 8 | Evaluation | 11,599 space classifications across three weather conditions |
+| 9 | Discussion | Limitations and further work |
 
-### The measured result
+### Results
+
 | Metric | Value |
 |---|---|
-| Accuracy | **74.30 %** on 11,599 held-out samples |
-| F1 | **0.7310** |
-| Speed | **77.33 ms/frame · 12.9 FPS**, CPU only |
-| Best / worst | Cloudy (even light) / Rainy (reflections read as edges) |
+| Accuracy | 74.30 % on 11,599 held-out samples |
+| F1 score | 0.7310 |
+| Processing time | 77.33 ms per frame (12.9 FPS), CPU only |
+| Best condition | Cloudy, due to even illumination |
+| Worst condition | Rainy, where reflections register as edges |
 
-### What I would do next
-1. **Ship the baseline** — edge density alone is more accurate *and* faster.
-2. **Re-fit the weights on all 11,599 samples**, not the small clean set.
-3. **Drop features that measurably fail** instead of keeping eight for symmetry.
-4. **Add temporal smoothing** — cars do not teleport; a one-frame flip is a glitch.
+Section 8 reports that a single-feature `edge_density` baseline achieves higher
+accuracy than the full eight-feature cascade on the evaluation set. The
+Feature Comparison tab reproduces this result.
+
+### Further work
+
+1. Adopt the single-feature baseline, which is more accurate and faster on the
+   evaluation set.
+2. Recompute the feature weights on the full sample rather than the smaller
+   subset.
+3. Remove features that measurably reduce accuracy.
+4. Add temporal smoothing across consecutive frames to suppress isolated
+   single-frame errors.
 """)
-    st.caption("Full write-up: README.md · Notebook: notebooks/00_COMPLETE_PROJECT.ipynb "
-               "· Talk track: docs/presentation/PRESENTATION_SCRIPT.md")
+    st.caption("Full write-up: README.md. Notebook: "
+               "notebooks/00_COMPLETE_PROJECT.ipynb")

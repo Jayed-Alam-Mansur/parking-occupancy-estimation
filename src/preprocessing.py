@@ -1,6 +1,4 @@
-# =============================================================================
 # preprocessing.py - Image Preprocessing Pipeline
-# =============================================================================
 """
 Image preprocessing functions for enhancing parking slot images.
 
