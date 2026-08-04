@@ -1,21 +1,29 @@
 # Automatic Parking Occupancy Estimation
 # Runtime dependencies for app.py
 #
-# Deploy with Python 3.12 (select in the Streamlit Cloud Advanced Settings).
+# Streamlit Community Cloud defaults to Python 3.13. Several packages below
+# only have pre-built wheels up to 3.12, so version-conditional pins ensure
+# the install succeeds on both 3.12 and 3.13+.
+#
 # To also run the notebooks, install requirements-dev.txt instead.
 
 # Image processing (headless build for server environments)
 opencv-python-headless==4.10.0.84
 
 # Numerics
-numpy==1.26.4
-pandas==2.2.2
+numpy==1.26.4 ; python_version < "3.13"
+numpy>=2.1,<3 ; python_version >= "3.13"
+
+pandas==2.2.2 ; python_version < "3.13"
+pandas>=2.2.3,<3 ; python_version >= "3.13"
 
 # Visualization
-matplotlib==3.9.2
+matplotlib==3.9.2 ; python_version < "3.13"
+matplotlib>=3.10.6 ; python_version >= "3.13"
 
 # Configuration
-PyYAML==6.0.2
+PyYAML==6.0.2 ; python_version < "3.13"
+PyYAML>=6.0.3 ; python_version >= "3.13"
 
 # Streamlit application
 streamlit==1.60.0
