@@ -326,6 +326,12 @@ Verified two ways with `uv`, the resolver Streamlit Cloud uses:
 1. **Wheel-only resolution** (`--only-binary :all:`, which forbids source builds) succeeds on **3.12, 3.13 and 3.14**. No compilation, so builds finish in seconds instead of 45 minutes.
 2. **A real Python 3.14.6 environment** was created and the pipeline run inside it — numpy 2.5.1, pandas 2.3.3, matplotlib 3.11.1, cv2 4.10.0 — producing **identical results** to the 3.12 development environment: 63.0 % on the default frame, cascade 70.94 %, single-feature baseline 82.69 %, gap +11.76 pts. The numpy 1.x -> 2.x migration is safe for this codebase.
 
+**Also applied as defensive measures**, since the container is not observable from outside:
+
+- **`packages.txt`** declares the apt packages `libgl1` and `libglib2.0-0`. Strictly, `opencv-python-headless` should not need `libGL` — that is the point of the headless build — but the two packages cost nothing to install and eliminate a whole class of Linux shared-library import failure.
+- **The Act 8 corpus is now computed on click, not on page load.** Streamlit executes *every* tab body on *every* rerun, not just the visible one, so the Twist tab was pushing 21 frames x 100 bays through the pipeline before the first render. Measured on Python 3.14: cold page load dropped from **390 MB / full corpus** to **218 MB / 1.55 s**, with the comparison taking 1.22 s when actually requested. Results are unchanged (+11.76 pts).
+- **`.streamlit/config.toml` no longer sets `[server]` options**, which Streamlit Cloud manages itself.
+
 > Optionally pin **Python 3.12** under *Advanced settings* when creating the app, matching the development environment (3.12.3) exactly. Note that Streamlit Cloud fixes the Python version at app creation, so changing it means deleting and redeploying — the markers avoid needing to.
 
 > **Free-tier apps sleep after ~7 days of inactivity** and take a few seconds to wake. If you are presenting from the deployed URL, **open it a few minutes beforehand** so it is warm — or just run it locally, which has no cold start.

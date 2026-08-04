@@ -10,8 +10,3 @@ font = "sans serif"
 
 [browser]
 gatherUsageStats = false
-
-[server]
-# The app only ever reads committed sample frames and config artifacts;
-# nothing is uploaded.
-maxUploadSize = 5

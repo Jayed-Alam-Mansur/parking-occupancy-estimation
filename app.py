@@ -652,8 +652,26 @@ with tab3:
         "throw away the other seven, threshold `edge_density` alone, and see "
         "who wins. **Drag the slider.**")
 
-    df = corpus_features(P, THR)
-    if df.empty:
+    # Streamlit executes EVERY tab body on every rerun, not just the visible
+    # one. Calling corpus_features() here unconditionally means a page load
+    # pushes 21 frames x 100 bays through the pipeline before anything renders
+    # — fine locally, but on a small shared cloud vCPU that risks tripping the
+    # startup timeout. So it is gated behind an explicit click.
+    if not st.session_state.get('twist_ready'):
+        st.info("This compares the cascade against a one-number baseline across "
+                "**every bay of all 21 sample frames** — 1,999 labelled bays. "
+                "It takes a couple of seconds, so it runs on demand rather than "
+                "on every page load.")
+        if st.button("▶︎ Run the comparison", type="primary"):
+            st.session_state.twist_ready = True
+            st.rerun()
+        df = pd.DataFrame()
+    else:
+        df = corpus_features(P, THR)
+
+    if not st.session_state.get('twist_ready'):
+        pass
+    elif df.empty:
         st.warning("No sample frames found in `data/samples/`.")
     else:
         lo, hi = float(df['edge_density'].min()), float(df['edge_density'].max())
